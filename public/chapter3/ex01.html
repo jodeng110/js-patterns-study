@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Chapter2 - 기초</title>
+    </head>
+
+    <body>
+        <script>
+        // 생성자 함수 어떤 객체든지 반환 가능 => 여기서는 that
+        var Objectmaker = function () {
+            this.anme = 'This is it!';
+
+            var that = {};
+            that.name = 'And That\'s That';
+            return that;
+        };
+
+        var o = new Objectmaker();
+        console.log(o.name);
+
+        // 생성자
+        function Waffle() {
+            this.tastes = 'yummy';
+        }
+
+        // 새로운 객체
+        var good_morning = new Waffle();
+        console.log(typeof good_morning);
+        console.log(good_morning.tastes);
+
+        // 안티패턴: 'new'를 빼먹었다.
+        var good_morning2 = Waffle();
+        console.log(typeof good_morning2); // undefined
+        console.log(window.tastes); // 'yummy'
+        </script>
+
+    </body>
+</html>

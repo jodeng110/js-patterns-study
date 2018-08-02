@@ -1,6 +1,5 @@
 # Javascript Patterns
 
-
 - 자바스크립트는 클래스가 없으며 함수(function)은 일급 객체(first-class object)
 
 ## Chapter 1 개요
@@ -576,9 +575,205 @@ console.log(typeof trois); // undefined
 ### 2.13 독자를 위한 문서 작성
 ### 2.14 동료 리뷰
 ### 2.15 출시 단계의 압축
+- 자바스크립트 코드에서 공백, 주석 및 기타 중요하지 않은 부분들을 삭제함으로써 서버에서 브라우저로 전송되는 파일 크기를 감소시킴.
+- 페이지 로딩 속도 개선
+- 압축 도구는 공백, 줄바꿈, 주석 등을 제거
+- 압축 도구는 지역 변수명만 변경
+- DOM 참조와 같은 전역 변수를 함수 내에서 두번 이상 사용한다면 지역 변수에 할당하라.
+- 압축률이 향상되고 코드가 더 빨리 다운로드 됨
+- 변수명을 탐색하는 시간도 줄어들기 떄문에 런타임의 코드 실행 속도도 개선.
+
 ### Lint 실행
 - 실행되지 않는 코드
 - 변수를 정의하기전에 사용한 경우
 - 불안전한 UTF문자
 - void, with, eval을 사용한 경우
 - 정규식 내에서 부적절하게 이스케이프한 문자
+
+## Chapter 3
+- 자바스크립트의 리터럴 표기법 패턴을 사용하면 좀더 정확하고 표현력이 풍부하면 서도 에러율은 낮은 방식으로 객체를 정의할 수 있다.
+- Object, Array, RegExp 등의 리터럴을 다룸.
+- Object() 나 Array()등의 내장 생성자 함수에 비해 리터럴 표기법을 쓰는게 더 좋음.
+
+### 3.1 객체 리터럴
+- 자바스크립트에서 '객체'라고 하면 단순히 이름-값 쌍의 해시 테이블을 생각하면돼~!
+- 원시 데이터 타입과 객체 모두 값이 될 수 있음.
+- 함수도 값이 될 수 있으며 이런 함수는 메서드라고 부름.
+- 자바스크립트에서 생성한 객체(사용자가 정의한 네이티브 객체)는 언제라도 변경 가능하며 내장 네이티브 객체의 프로퍼티들도 대부분 변경이 가능
+- 빈 객체를 정의해놓고 기능을 추가해 나갈 수 있다.
+
+```javascript
+// 빈 객체에서 시작
+var person = {};
+
+// 프로퍼티 하나를 추가한다.
+person.name = 'Jodeng';
+
+// 메서드도 추가해보자!
+person.getName = function () {
+    return person.name;
+};
+
+// 프로퍼티와 메서드 값을 변경 가능
+person.getName = function () {
+    return 'Taz';
+};
+
+// 프로퍼티나 메서드를 삭제
+delete person.name;
+
+// 다른 프로퍼티나 메서드 추가
+person.gender = 'female';
+person.sayHello = function () {
+    console.log('Hello');
+};
+```
+- 반드시 빈 객체에서 시작안해도돼!
+- 객체 리터럴 표기법을 쓰면 생성 시점에 객체에 프로퍼티 추가 가능
+```javascript
+var person = {
+    name: 'Jodeng',
+    getName: function () {
+        return this.name;
+    }
+};
+```
+#### 객체 리터럴 문법
+- 중괄호 { } 로 감싼다.
+- 객체 내의 프로퍼티와 메서드를 쉼표(,)로 분리
+- 마지막 key-value 쌍 뒤에 쉼표가 들어가면 IE에서는 에러 발생
+- 프로퍼티명(key)과 프로퍼티 값(value)은 콜론으로 분리
+- 객체를 변수에 할당할 때는 닫는 중괄호 뒤에 세미콜론을 뺴먹지 않도록 하자.
+
+#### 생성자 함수로 객체 생성하기
+- 객체를 생성할 때는 직접 만든 생성자 함수를 사용할 수 있음.
+- Object(), Date(), String()등 내장 생성자 사용.
+```javascript
+// 객체를 생성하는 두 가지 방법
+// 첫 번째 방법 - 리터럴 사용
+var car = {goes: 'far'};
+
+// 두 번째 방법 - 내장 생성자 사용 (안티패턴)
+var car = new Object();
+car.goes = 'far';
+```
+- 리터럴 표기법을 사용하면 유효범위 판별 작업도 발생하지 않는다.(?)
+- 생성자 함수를 사용했다면 지역 유효 범위에 동일한 이름의 생성자가 있을 수 있기 때문에 Object()를 호출한 위치에서부터 전역 Object생성자 까지 인터프리터가 쭉 거슬러 올라가며 유효범위 검색
+
+#### 객체 생성자의 함정
+```javascript
+// 모두 안티패턴이야!
+
+// 빈 객체
+var empty = new Object();
+console.log(empty.constructor === Object); // true
+
+// 숫자 객체
+var num = new Object(1);
+console.log(num.constructor === Number); // true
+console.log(num.toFixed(2)); // "1.00"
+
+// 문자열 객체
+var str = new Object('I am a String.');
+console.log(str.constructor === String); // true
+console.log(typeof str.substring); // 'function'
+
+// 불린 객체
+var bool = new Object(true);
+console.log(o.constructor === Boolean); // true
+```
+- 런타임에 결정하는 동적인 값이 생성자에 인자로 전달될 경우 예기치 못한 결과 반환 될 수 있어.
+- 결론적으로 new Object()는 사용하지 마라.
+
+### 3.2 사용자 정의 생성자 함수
+```javascript
+var Person = function (name) {
+    this.name = name;
+    this.say = function () {
+        return `I am ${this.name}`;
+    };
+};
+
+var jodeng = new Person('Jodeng');
+jodeng.say(); // 'I am Jodeng'
+```
+- new와 함꼐 생성자 함수를 호출하면 함수 안에서 다음과 같은 일이 일어난다.
+    - 빈 객체 생성. 이 객체는 this라는 변수로 참조할 수 있고, 해당 함수의 프로토타입을 상속받는다.
+    - this로 참조되는 객체에 프로퍼티와 메서드가 추가됨.
+    - 마지막에 다른 객체가 명시적으로 반환되지 않을 경우, this로 참조된 이 객체가 반환
+    ```javascript
+    var Person = function (name) {
+        // 객체 리터럴로 새로운 객체 생성
+        // var this = {}; ======> var this = Object.create(Person.prototype);
+
+        // 프로퍼티와 메서드 추가
+        this.name = name;
+        // new Person()를 호출할 때마다 메모리에 새로운 함수 생성 => 비효율적이니깐 prototype에 추가하자.
+        this.say = function () {
+            return `I am ${this.name}`;
+        };
+
+        // this 반환
+        // return this;
+    };
+
+    Person.prototype.say = function () {
+        return `I am ${this.name}`;
+    };
+    ```
+#### 생성자의 반환 값
+- 생성자 함수를 new와 함께 호출하면 항상 객체가 반환.
+- 함수 내에 return 문을 쓰지 않았더라도 생성자는 암묵적으로 this 반환
+- 반환 값이 될 객체를 따로 정할 수도 있어.
+```javascript
+var Objectmaker = function () {
+    this.anme = 'This is it!';
+
+    var that = {};
+    that.name = 'And That\'s That';
+    return that;
+};
+
+var o = new Objectmaker();
+console.log(o.name);
+```
+- 생성자는 어떤 객체라도 반환
+- 객체가 아닌 문자열이나 false등을 반환하려고 시도하면, 에러가 발생하진 않지만 그냥 무시되고 this에 의해 참조된 객체가 대신 반환
+
+### 3.3 new를 강제하는 패턴
+- 생성자 호출 시 new를 빼먹으면 어떻게 될까?
+- 문법 오류나 런타임 에러가 발생하지는 않지만, 논리적인 오류가 생겨 예기치 못한 결과가 나올 수 있음.
+- new를 빼먹으면 생성자 내부의 this가 전역 객체를 가리키게 되기 때문
+- 브라우저에서라면 this가 window를 가리키게 됨.
+- 생성자 내부에 this.member와 같은 코드가 있을 때 이 생성자를 new없이 호출 하면, 실제로는 전역 객체에 member라는 새로운 프로퍼티가 생성됨.
+- 이 프로퍼티는 window.member 또는 member를 통해 접근할 수 있다.
+- 전역 네임스페이스는 항상 꺠끗하게 유지해야해~~!
+```javascript
+// 생성자
+function Waffle() {
+    this.tastes = 'yummy';
+}
+
+// 새로운 객체
+var good_morning = new Waffle();
+console.log(typeof good_morning);
+console.log(good_morning.tastes);
+
+// 안티패턴: 'new'를 빼먹었다.
+var good_morning2 = Waffle();
+console.log(typeof good_morning2); // undefined
+console.log(window.tastes); // 'yummy'
+```
+#### 명명 규칙
+#### that 사용
+#### 스스로를 호출하는 생성자
+### 3.4 배열 리터럴
+#### 배열 리터럴 문법
+#### 배열 생성자의 특이성
+#### 배열인지 판별하는 방법
+### 3.5 JSON
+#### JSON 다루기
+### 3.6 정규 표현식 리터럴
+#### 정규 표현식 리터럴 문법
+### 3.7 원시 데이터 타입 래퍼
+### 3.8 에러 객체
