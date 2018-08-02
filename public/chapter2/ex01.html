@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Chapter2 - 기초</title>
+    </head>
+
+    <body>
+        <script>
+        // for 루프 변형 1
+        var i, myarray = [1,2,3,4,5,6,7,8,9,10];
+
+        for (i = myarray.length ; i-- ;) {
+            console.log(`${i} : ${myarray[i]}`);
+        }
+
+        // for 루프 변형 2
+        var myarray2 = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+            j = myarray2.length;
+
+        while (j--) {
+            console.log(`${j} : ${myarray2[j]}`);
+        }
+
+        var man = {
+            hands: 2,
+            legs: 2,
+            heads: 1
+        };
+        
+        Object.prototype.test = 'test';
+
+        if (typeof Object.prototype.copy === 'undefined') {
+            Object.prototype.copy = function (obj) { 
+                return JSON.parse(JSON.stringify(obj));
+            }
+        }
+
+        console.log(man);
+        console.log(`Objectp.prototype.test 지정후 man.test : ${man.test}`);
+
+        for (var propName in man) {
+            if (man.hasOwnProperty(propName)) { // 프로토타입 프로퍼티 걸러낸다!
+                console.log(`${propName} : ${man[propName]}`);
+            }
+        }
+        
+        // 안티패턴  
+        for (var propName in man) {
+            console.log(`${propName} : ${man[propName]}`);
+            // man property외에 Object prototype property까지 죄다 열거됨!!!
+        }
+        
+        // eval되도록이면 사용하지마.
+        console.log(typeof un); // undefined
+        console.log(typeof deux); // undefined
+        console.log(typeof trois); // undefined
+
+        var jsstring = 'var un = 1; console.log(un);';
+        eval(jsstring); // 1
+
+        jsstring = 'var duex = 2; console.log(duex);';
+        new Function(jsstring)(); // 2
+
+        jsstring = 'var trois = 3; console.log(trois);';
+        (function () {
+            eval(jsstring); // 3
+        })();
+
+        console.log(typeof un); // number ===> 전역스페이스 오염되었구나!
+        console.log(typeof deux); // undefiend
+        console.log(typeof trois); // undefined
+
+        (function (){
+            var local = 1;
+            eval('local = 3; console.log(local);');
+            console.log(local);
+        })();
+
+        (function () {
+            var local = 1;
+            Function('console.log(typeof local);')(); // undefined
+        })();
+        
+        // parseInt 사용시 두번째 매개변수인 기수를 꼭 지정해주자!
+        var month = '08', year = '2018', date = '02';
+        console.log(`${year}-${month}-${date}`);
+        console.log(`${year}년 ${parseInt(month, 10)}월 ${parseInt(date, 10)}일`);
+
+        // 의도치 않는 여는 중괄호의 잘못된 방식
+        function func() {
+        return 
+            {
+                name: 'Jodeng'
+            };
+        }
+        console.log(func()); // undefined
+
+        function func2() {
+            return {
+                name: 'Jodeng'
+            };
+        }
+        console.log(func2());
+        </script>
+
+    </body>
+</html>
