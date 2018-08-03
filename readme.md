@@ -767,13 +767,920 @@ console.log(window.tastes); // 'yummy'
 #### 명명 규칙
 #### that 사용
 #### 스스로를 호출하는 생성자
+```javascript
+function Waffle() {
+    if (!(this instanceof Waffle)) {
+        return new Waffle();
+    }
+
+    this.tastes = 'yummy';
+}
+```
 ### 3.4 배열 리터럴
+```javascript
+// 안티 패턴
+var a = new Array('Jodeng', 'Taz', 'BeomGeon');
+
+// 권장 (배열 객체 리터럴 문법)
+var b = ['Jodeng', 'Taz', 'BeomGeon'];
+
+console.log(a, b);
+console.log(`typeof a : ${typeof a}`); // object
+console.log(`typeof b : ${typeof b}`); // object
+console.log(`a.constructor === Array : ${a.constructor === Array}`); // true
+console.log(`b.constructor === Array : ${b.constructor === Array}`); //true
+```
 #### 배열 리터럴 문법
+- 각 원소는 쉼표로 분리, 전체 목록을 대괄호로 감쌈.
+    - ex) arr = ['Jodeng', 'Taz', 'BeomGeon'];
+- 직관적이고 우아함.
 #### 배열 생성자의 특이성
+- new Array()를 피해야하는 이유?
+    - 생성자가 품고 있는 함정을 피하기 위해서!
+    - Array() 생성자에 숫자 하나를 전달할경우, 이 값은 배열의 첫 번째 원소 값이 되는게 아니라 배열의 길이를지정.
+        - new Array(3) 은 배열 길이가 3이고 실제 원소 값은 가지지 않음.
+        - 원소가 존재하지 않기 때문에 어느원소에 접근하든 undefined
+        ```javascript
+        // 한 개의 원소를 가지는 배열
+        var c  = [3];
+        console.log(c.length); // 1
+        console.log(c[0]); // 3
+
+        // 세 개의 원소를 가지는 배열
+        var d = new Array(3);
+        console.log(d.length); // 3
+        console.log(d[0], d[1], d[2]); // undefined undefined undefined
+        ```
+    - new Array()에 정수가 아닌 부동 소수점을 전달하면 예상밖의 결과 나와.
+        - 부동 소수점은 배열의 길이로 유효한 값이 아니기 때문에 에러 발생
+        ```javascript
+        // 리터럴 사용
+        var e = [3.14];
+        console.log(a[0]);
+
+        var f = new Array(3.14);
+        console.log(typeof f); // Uncaught RageError : Invalid array length
+        ```
+    - 런타임에 동적으로 배열을생성할 경우 에러 발생을 피하려면 배열의 리터럴표기법을 쓰는것이 안전해!
 #### 배열인지 판별하는 방법
-### 3.5 JSON
+- 배열에 typeof 연산자 사용하면 'object'가 반환
+    ```javascript
+    console.log(typeof [1, 2, 3]); // object
+    ```
+- intanceof Array : IE 일부 버전에서 프레임간 사용시 올바르게 동작 X
+- ECMAScript 5 Array.isArray() 메서드 사용
+    ```javascript
+    console.log(Array.isArray([])); // true 반환
+
+    console.log(Array.isArray({
+        length: 1,
+        '0': 1,
+        slice: function () {
+            // slice 구현
+        }
+    })); // false 반환
+    ```
+- 배열에 toString() 호출
+    - 배열이면 [object Array]
+    - 객체이면 [object Object]]
+    ```javascript
+    var toString= Object.prototype.toString;
+
+    console.log([1, 2, 3].toString()); // 1,2,3
+    console.log(Object.prototype.toString.call(new Array())); // [object Array]
+    console.log({name: 'jodeng', gender: 'female'}.toString()); // [object Object]
+
+    console.log(toString.call([])); // [object Array]
+    console.log(toString.call(new Date)); // [object Date]
+    console.log(toString.call(new String)); // [object String]
+    console.log(toString.call(Math)); // [object Math]
+    console.log(toString.call(undefined)); // [object Undefiend]
+    console.log(toString.call(null)); // [Object Null]
+    ```
+- 배열 판별 메소드 직접 작성
+    ```javascript
+    if (typeof Array.isArray ==='undefined') {
+        Array.isArray = function (arg) {
+            return Object.prototype.toString.call(arg) === '[object Array]';
+        };
+    }
+    ```
+
+### 3.5 JSON (Javascript Object Notation)
+- 데이터 전송형식의 일종
+- JS 뿐만아니라 여러 다른언어에서도 가볍고 편리하게 사용 가능
+- 배열과 객체 리터럴 표기법의 조합
+    ex) {"name": "value", "some": [1, 2, 3]}
+- JSN 문자열에 함수나 정규식 리터럴 사용 X
 #### JSON 다루기
+- JSON.parse() : JSON문자열을 객체 또는 배열로 파싱
+    ```javascript
+    // 입력되는 JSON 문자열
+    var jstr = '{"mykey": "my value"}';
+
+    // 안티 패턴
+    var data = eval('(' + jstr + ')');
+
+    // 권장안
+    var smart = JSON.parse(jstr);
+    console.log(smart, smart.mykey); // "my value"
+    ```
+- JSON.stringify() : 객체 또는 배열을 인자로 받아 JSON문자열로 직렬화
+    ```javascript
+    var dog = {
+        name: 'Pori',
+        dob:new Date(),
+        legs: [1, 2, 3, 4]
+    };
+
+    var jsonstr = JSON.stringify(dog);
+
+    console.log(jsonstr);
+    ```
 ### 3.6 정규 표현식 리터럴
+- JS에서 정규표현식(Regular Expression, 정규식)은 객체!
+- 정규식을 생성하는 방법 두가지
+    - new RegExp() 생성자 사용
+        - 따옴표나 역슬래시 등을 이스케이프
+        ```javascript
+        var re1 = new RegExp("\\\\", "gm");
+        ```
+    - 정규식 리터럴 사용
+        - 짧고 쓰기 편함.
+        ```javascript
+        var re2 = /\\/gm;
+        ```
 #### 정규 표현식 리터럴 문법
+- 정규식 패턴은 슬래시(/)로 감싼다.
+- 두번째 슬래시뒤에 따옴표 없이 문자형태의 변경자 지정
+    - g : 전역 매칭
+    - m : 여러 줄 매칭
+    - i : 대소문자 구분 없이 매칭
+- 여러개를 함께 써도돼 ex) var re = /pattern/gmi;
+- 정규식 리터럴을 사용하면 정규식 객체로 인자로받는 String.prototye.replace와 같은 메서드 호출 시 좀더 정확한 코드 작성
+    ```javascript
+    var no_letters = "abc123XYZ".replace(/[a-z]/gi, "");
+    console.log(no_letters); // 123
+    ```
+- 매칭시킬 패턴을 미리 알 수 없고, 런타임에 문자열로 만들어지는 경우 new RegExp() 사용
+- RegExp() 생성자 호출 시 new를 빼먹더라도 new를 붙여 호출한것처럼 동작!
+
+##### 정규식 리터럴 vs 생성자(new RegExp())
+- 정규식 리터럴의 경우 파싱될 때 단 한번만 객체 생성
+- 루프안에 동일한 정규식을 생성하면 이미 생성된 객체가 반환되며 lastIndex등 모든 프로퍼티는 최초에 설정된 상태를 이어받음.(?)
+```javascript
+function getRE() {
+    var re = /[a-z]/;
+    re.foo = 'bar';
+    return re;
+
+}
+
+var reg = getRE(),
+    re2 = getRE();
+
+console.log(reg === re2); // false
+reg.foo = 'baz';
+console.log(reg.foo);// baz
+console.log(re2.foo); // bar
+```
 ### 3.7 원시 데이터 타입 래퍼
+- JS Primitive(원시형) Data Type : String, Boolean, Number, Null, Undefined, Symbol
+- String, Boolean, Number는 원시 데이터 타입 래퍼라 불리는 객체를 가지고 있음.
+- 이 객체 래퍼는 각각 내장 생성자인 Number(), String(), Boolean()을 사용하여 생성
+```javascript
+// 원시 데이터 타입 숫자
+var n = 100;
+console.log(typeof n); // 'number'
+
+// 숫자 객체
+var nObj = new Number(100);
+console.log(typeof nObj); // 'object'
+```
+- 래퍼 객체이는 유용한 프로퍼티와 메서드들이 들어 있음.
+    - Number에는 toFixed(), toExponential() ...
+    - String에는 substring(), charAt(), tp:pwerCase() 같은 메서드와 length 프로퍼티 존재
+    - 원시 데이터 타입그대로 써도 래퍼 객체의 메서드를 활용 가능!!
+        - 메서드를 호출하는 순간 내부적으로 원시 데이터 타입 값이 객체로 임시 변환되여 객체처럼 동작하기 때문이지~!
+        ```javascript
+        // 원시 데이터 타입 문자열을 객체로 사용
+        var s = 'hello';
+        console.log(s.toUpperCase()); // HELLO
+
+        // 값 자체만으로도 객체처럼 동작 가능
+        console.log('monkey'.slice(3,6)); // 'key'
+
+        // 숫자도 마찬가지
+        console.log((22 / 7).toPrecision(3)); // 3.14
+        ```
+- 원시 데이터 타입 값도 언제든 객체처름 쓸 수 있기 때문에 장황한 래퍼 생성자를 쓸 필요 X
+    ```javascript
+    // 안티 패턴
+    var s = new String('my string');
+    var n = new Number(101);
+    var b = new Boolean(true);
+
+    // 권장안
+    var s = 'my string';
+    var n = 101;
+    var b = true;
+    ```
+- 값을 확장하거나 상태를 지속시키기 위해 래퍼 객체를 쓰는 경우도 있어!
+    - 원시 데이터 타입은 객체가 아니기 때문에 프로퍼티 추가, 확장할 수 없거든!
+    ```javascript
+    // 원시 데이터 타입 문자열
+    var greet = 'Hello there';
+
+    // split() 메서드를 쓰기 위해 원시 데이터 타입이 객체로 변환
+    console.log(greet.split(' ')[0]); // 'Hello'
+
+    // 원시 데이터 타입에 확장을 시도 할 경우 에러는 발생하지 않는다.
+    greet.smile = true;
+
+    // 그러나 실제로 동작 X
+    console.log(typeof greet.smile); //undefiend
+
+    var greet2 = new String('Hello Jodeng!');
+    greet2.isSmile = true;
+    console.log(greet2.isSmile); // isSmile 프로퍼티 추가됨!
+    ```
+- new를 빼먹고 래퍼 생성자를 사용하면, 래퍼 생성자가 인자를 원시 데이터타입의 값으로 변환
+    ```javascript
+    console.log(typeof Number(1)); // number
+    console.log(typeof Number("1")); // number
+    console.log(typeof Number(new Number())); // number
+    console.log(typeof String(1)); // string
+    console.log(typeof Boolean(1)); // boolean
+    ```
 ### 3.8 에러 객체
+- Error(), SyntaxError(), TypeError() 등 여러가지 에러 생성자가 내정되어 있고 throw문과 함께 사용.
+- name, message 프로퍼티 가짐.
+- 이 외에도 에러가 발생한 행 번호와 파일명 등다른 프로퍼티들도 있을 수 있지만, 추가적인 프로퍼티들은 브라우저별로 일관성 없이 구현된 확장 기능이기 때문에 믿고 쓰기 무리.
+- throw문은 어떤 객체와 함꼐 사용 가능
+     - 반드시 에러 생성자를 통해 객체를 생성해야 하는 것은 아니고 직접 정의해서 (name, message prop을 가진) 정의한 객체를 던질 수 있음.
+- Error 생성자도 new를 빼먹고 호출해도 new를 써서 호출한것과 동일한 동작
+```javascript
+try {
+    // 에러 발생
+    throw {
+        name: 'MyErrorType',
+        message: 'oops',
+        extra: 'This was ratherembarrassing',
+        remedy: genericErrorHandler // 에러를 처리할 함수
+    };
+} catch (e) {
+    // 사용자한테 공지
+    console.error(e.message); // oops
+    e.remedy(); // genericErrorHandler() 호출
+}
+```
+
+## Chapter 4 - 함수
+### 4.1 배경 지식
+##### 자바스크립트의 함수를 특별하게 만든느 두가지
+- 1. 함수는 일급(first-class) 객체다!
+- 2. 함수는 유효범위(scope)를 제공한다!
+##### 함수의 특징?
+- 런타임, 즉 프로그램 실행 중에 동적으로 생성할 수 있다.
+- 변수에 할당할 수 있고, 다른 변수에 참조를 복사할 수 있으며, 확장 가능하고, 몇몇 특별한 경우를 제외하면 삭제할 숭 ㅣㅆ다.
+- 다른 함수의 인자로 전달할 수 있고, 다른 함수의 반환 값이 될 수 ㅣㅇㅆ다.
+- 자기 자신의 프로퍼티와 메서드를 가질 수 있다.
+
+- 함수는 하나의 객체
+    ```javascript
+    // 안티패턴! 데모의 목적으로만 사용해라
+    var add = new Function('a, b', 'return a + b');
+    add(1, 2); // 3
+    ```
+    - Function () 생성자의 사용은 eval() 만큼이나 안좋아!
+    - 코드가 문자열로 전달되어 평가되기 때문.
+    - 따옴표를 이스케이프 해야하고, 가독성도 떨어져!
+- 함수가 유효범위(scope)를 제공!
+    - 어떤 변수이건 함수 내에서 var로 정으되면 지역변수이고 함수 밖에서는 참조X
+    - {} 중괄호 지역유효범위 X
+        - if, for, while문 내에서 var로 정의해도 이건 if나 for의 지역변수가 아님.
+    - 감싸는함수가 없으면 전역변수가 된다...
+#### 용어 정리
+- 기명 함수 표현식
+    ```javascript
+    var add = function add(a, b) {
+        return a + b;
+    };
+    ```
+- 무명 함수 표현식(= 함수 표현식, = 익명 함수)
+    ```javascript
+    var add = function (a, b) {
+        return a + b;
+    };
+    ```
+- 함수 선언문
+    ```javascript
+    function add(a, b) {
+        return a + b;
+    }
+    ```
+#### 선언문 vs 표현식 : 이름과 호이스팅
+```javascript
+// 함수 표현식을 callMe 함수의 인자로 전달
+callMe(function () {
+    // 이 함수는 무명 함수(익명 함수) 표현식
+});
+
+// 기명 함수 표현식을 callMe 함수의 인자로 전달
+callMe(function me() {
+    // 이 함수는 'me'라는 기명 함수 표현식
+});
+
+// 함수 표현식을 객체의 프로퍼티로 저장
+var myobject = {
+    say: function () {
+        // 이 함수는 함수 표현식이다.
+    }
+};
+```
+- 함수 선언문은 전역 유효범위나다른함수의 본문내부, 즉 '프로그램 코드'에서만 쓸 수 있다.
+- 함수 선언문은 변수나 프로퍼티에 할당 할수 없고, 함수 호출 시 인자로 함수를 넘길때도 사용할 수 없다.
+- 언제 함수 선언문을 사용할 수 있을까?
+    ```javascript
+    // 전역 유효범위
+    function foo () {
+        function local () {
+            function bar () {}
+
+            return bar;
+        }
+    }
+    ```
+#### 함수의 name 프로퍼티
+```javascript
+function foo() {}
+var bar = function () {};
+var baz = function baz() {};
+
+console.log(foo.name); // foo
+console.log(bar.name); // Chrome : bar (IE, FireFox, Webkit에서는 undefined)
+console.log(baz.name); // baz
+```
+- 디버거 할때 유용
+- name 프로퍼티는함수 내부에서자신을 재귀적으로 호출할 때 사용.
+#### 함수 호이스팅
+- 모든 변수는 함수 본문어느 부분에서 선언 되더라도 내부적으로 함수의 맨 윗줄로 끌여올려(hoist)) 진다.
+- 함수 또한 결국 변수에할당되는 객체이기때문에 동일한 방식이 적용.
+- 함수 선언문은 함수 정의 자체도 호이스팅 된다.
+```javascript
+// 안티패턴 - 데모를 위해 사용한것
+
+// 전역 변수
+function foo() {
+    console.log('global foo()');
+}
+function bar() {
+    console.log('global bar()');
+}
+
+function hoistMe() {
+    console.log(typeof foo);
+    console.log(typeof bar);
+
+    foo();
+    bar(); // TypeError: bar is not a function
+
+    // 함수 선언문
+    function foo() {
+        console.log('local foo()');
+    }
+
+    var bar = function () {
+        console.log('local bar()');
+    }; 
+
+}
+
+hoistMe();
+```
+### 4.2 콜백 패턴
+- 함수는 객체다.
+- 함수를 다른 함수에 인자로 전달 할 수 있다.
+```javascript
+function writeCode(callback) {
+    // 어떤 작업 수행
+    console.log('[writeCode]호출');
+    callback();
+}
+
+function introduceBugs() {
+    console.log('[call instruduceBugs]');
+}
+
+writeCode(introduceBugs); // 괄호를 붙이면 함수가 실행되는 괄호 안붙이면 함수의 참조만 전달.
+```
+#### 콜백 예제
+- DOM 트리를 탐색해 필요한 엘리먼트의 배열을 반환
+```javascript
+var findNodes = function (callback) {
+    var i = 100000,
+        nodes = [],
+        found;
+
+    // callbak 함수를 호출하룻 있는지 확인
+    if (typeof callback !== 'function') {
+        callback = false;
+    }
+
+    while (i) {
+        i -= 1;
+
+        // 여기서 콜백을 실행한다.
+        if (callback) {
+            callback(found);
+        }
+
+        nodes.push(found);
+    }
+    return nodes;
+};
+/*
+var hide = function (nodes) {
+    var i = 0, max = nodes.length;
+    for (; i < ma; i += 1) {
+        nodes[i].style.display = 'none';
+    }
+}
+
+hide(findeNodes);
+*/
+var hide = function (node) {
+    node.style.display = 'none';
+};
+
+findNodes(hide);
+```
+#### 콜백과 유효범위
+- 만약 콜백 메서드가 자신이 속했있는 객체를 참조하기 위해 this를 문제 발생!
+```javascript
+var myapp = {};
+myapp.color = 'green';
+myapp.paint = function (node) {
+    node.style.color = this.color;
+};
+
+
+var findeNodes = function (callback) {
+    //...
+    if (typeof callback === 'function') {
+        callback(found);
+    }
+    //...
+}
+
+findNodes(myapp.paint); // this.color 문제 발생 (this 참조가...흠..) 
+```
+- findNodes(myapp.paint)를 호출하면 this.color가 정의되지 않아 정상적으로 동작X
+- 이 문제를 해결하기 위해 콜백함수와 콜백이 속해 있는 객체를 전달한다.
+```javascript
+findNodes(myapp.paint, myapp);
+
+var findNodes = function (callback, context) {
+    //...
+    if (typeof callback === 'function') {
+        callback.call(context, found);
+    }
+    //...
+};
+
+findNodes(myapp.paint, myapp);
+findNodes('paint', myapp);
+
+var findNodes = function (callback, context) {
+    if (typeof callback === 'string') {
+        callback = context[callback];
+    }
+
+    if (typeof callback === 'function') {
+        callback.call(context, found);
+    }
+};
+```
+#### 비동기 이벤트 리스너
+- 대부분의 클라이언트 측 브라우저 프로그래밍은 이벤트 구동(event-driven)방식이다.
+- 페이지의 로딩이 끝나면 load 이벤트를 발생시킨다.
+#### 타임아웃
+- 브라우저의 window객체에 의해 제공되는 타임아웃 메서드들
+    - setTimeout(), setInterval()
+```javascript
+var thePlotThickens = function () {
+    console.log('500ms later...');
+};
+setTimeout(thePlotThickens, 500);
+```
+- thePlotThickens가 괄호없이 변수로 전달되었다.
+- 이 함수를 곧바로 실행하지 않고 setTimeout이 나중에 호출할 수 있도록 함수를 가리키는 포인터만 전달
+
+#### 라이브러리에서의 콜백
+- 소프트웨어 라이브러리에 들어갈 코드는 가능한 범용적이고 재사용할 수 있어야한다.
+- 핵심 기능에 집중하고 콜백의 형태로 hook을 제공해라!
+### 4.3 함수 반환하기
+- 일회적인 초기화 작업을 수행한 후 반환 값을 만든다. 반환 값은 실행 가능한 함수
+    ```javascript
+    var setup = function () {
+        console.log(1);
+        return function () {
+            console.log(2);
+        }
+    };
+
+    var my = setup();
+    my();
+    var my2 = setup();
+    my2();
+
+    my();
+    ```
+    - setup()은 반환된 함수를 감싸고 있기 때문에 클로저 생성
+    - 클로저는 반환되는 함수에서는 접근할 수 있지만 코드 외부에서는 접근할 수 없기 때문에, 비공개 데이터 저장을 위해 사용할 수 있다.
+    ```javascript
+    var counting = function () {
+        var count = 0;
+        return function () {
+            return (count += 1);
+        };
+    };
+
+    var next = counting();
+    console.log(next()); // 1
+    console.log(next()); // 2
+    console.log(next()); // 3
+    console.log(next()); // 4
+    console.log(next()); // 5
+    console.log(next()); // 6
+    ```
+### 4.4 자기 자신을 정의하는 함수
+```javascript
+var scareMe = function () {
+    console.log('Boo!');
+    scareMe = function () {
+        console.log('double Boo!');
+    };
+};
+
+scareMe(); // Boo!
+scareMe(); // double Boo!
+```
+- 함수가 어떤 초기화 준비 작업을 단 한 번만 수행할 경우 유용
+- 불필요한 작업을 반복할 이유가 없기 때문에 함수의 일부는 더 이상 쓸모X
+- 함수가 자기 자신을 재정의하여 구현 내용을 갱신
+- Lazy function definition 이라고 불리는데 최초 사용 시점 전까지 함수를 완전히 정의하지 않고 있다가 호출된 이후에는 더 게을러져서 더 적게 일하기 때문에!
+- 단점은 자기 자신을 재정의한 이후에는 이전에 원본 함수에 추가했던 프로퍼티들을 모두 찾을 수 없다는 점.
+- 또 다른 단점은, 함수가 다른 이름으로 사용된다면, 예를 들어 변수가 할당되거나, 객체의 메서드로써 사용되면 재정의된 부분이 아니라 원본 함수의 본문이 실행된다.
+- scareMe()를 일급 객체로 사용하는 예
+    - 1. 새로운 프로퍼티 추가
+    - 2. 함수 객체가 새로운 변수에 할당
+    - 3. 함수는 메서드로써도 사용
+    ```javascript
+    // 1. 새로운 프로퍼티 추가
+    scareMe.property = 'properly';
+
+    // 2. 다른 이름으로 할당
+    var prank = scareMe;
+
+    // 3. 메서드로 사용한다.
+    var spooky = {
+        boo: scareMe
+    };
+
+    // 새로운 이름으로 호출
+    prank();
+    prank();
+    console.log(prank.property);
+
+    // 메서드 호출
+    spooky.boo();
+    spooky.boo();
+    console.log(spooky.boo.property);
+
+    // 자기 자신을 재정의한 함수 사용
+    scareMe();
+    scareMe();
+    console.log(scareMe.property);
+    ```
+### 4.5 즉시 실행함수
+- 함수가 선언되자 마자 실행되도록 하는 문법
+```javascript
+(function () {
+    console.log('Watch out!');
+})();
+```
+- 즉시 실행 함수 패턴
+    - 함수를함수 표현식으로 선언한다.(함수 선언문으로는 동작X)
+    - 함수가 즉시 실행될 수 있도록 마지막에 괄호쌍을 추가
+    - 전체 함수를 괄호로 감싼다. (함수를 변수에 할당하지 않을 경우에만 필요하다.)
+- 이 패턴은 초기화 코드에 유효범위 샌드박스를 제공한다는 점에서 유용
+    - 페이지 로드가 완료된 후, 이벤트 핸들러를 등록하거나 객체를 생성하는등의 초기 설정 작업을 해야한다.
+    - 이 모든 작업은 단 한번만 실행되기 때문에 재사용하기 위해 이름이 지정된 함수를 생성할 필요가 없다.
+    - 초기화 단계가 완료될때까지만 사용할 임시변수들이 필요하다.
+- 즉시 실행 함수는 모든 코드를 지역 유효범위로 감싸고 어떤 변수도 전역 유효범위로 새어나가지 않게 한다.
+    ```javascript
+    (function () {
+        var days = ['일', '월', '화', '수', '목', '금', '토'],
+            today = new Date(),
+            msg = `오늘은 ${today}, ${days[today.getDay()]}요일 입니다.`;
+
+        console.log(msg);
+    })();
+    ```
+#### 즉시 실행함수의 매개변수
+```javascript
+(function (who, when) {
+    console.log(`나는 ${who}님을 ${when}에 만났어용!`);
+})('조뎅', new Date());
+```
+- 즉시 실행 함수 내에서 window를 사용하지 않고도 전역 객체에 접근할 수 있다.
+    - 브라우저 외의 실행환경에서도 코드를 공통으로 사용 가능
+    ```javascript
+    (function (global) {
+
+    })(this);
+    ```
+#### 즉시 실행함수의 반환 값
+- 즉시 실행 함수의 유효범위를 사용해 특정 데이터를 비공개 상태로 저장하고, 반환되는 내부 함수에서만 접근하도록 할 수 있다.
+- 즉시 실행 함수가 함수를 반환하고 이 반환값이 getResult라는 변수에 할당된다. 
+    - 이 함수는 즉시 실행 함수에서 미리 계산하여 클로저에 저장해 둔 res라는 값을 반환한다.
+    ```javascript
+    var getResult = (function () {
+        var res = 2 + 2;
+        return function () {
+            return res;
+        }
+    })();
+    ```
+```javascript
+var o = {
+    message: (function () {
+        var who = 'me',
+            what = 'call';
+        return what + ' ' + who;
+    })(),
+    getMsg: function () {
+        return this.message;
+    }
+};
+
+console.log(o.getMsg()); // call me
+console.log(o.message); // call me
+```
+- 어떤 객체의 프로퍼티가 객체의 생명주기 동안에는 값이 변하지 않고, 처음에 값을 정의할 때는 적절한 계산을 위한작어이 필요하다.
+- 그렇다면 이 작업을 즉시 실행 함수로 감싼 후, 즉시 실행 함수의 반환 값을 프로퍼티 값으로 할당하면 된다.
+#### 장점과 사용 방법
+- 선언됨과 동시에 실행
+- 선언된 모든 변수는 스스로를 호출하는 함수의 지역변수가 되기때문에 임시 변수가 전역공간을 어지럽힐 걱정 없어!
+- 개별 기능을 독자적인 모듈로 감쌀 수 있다.
+```javascript
+(function () {
+    // 모든 module1 코드
+})();
+```
+### 4.6 즉시 객체 초기화
+- 객체가 생성된 즉시 init() 메서드를 실행해 객체를 사용.
+- init()함수는 모든 초기화 작업을 처리
+    ```javascript
+    ({
+        maxWidth: 600,
+        maxHeight: 400,
+        gimmeMax: function () {
+            return `${this.maxWidth}x${this.maxHeight}`;
+        },
+        init: function () {
+            console.log(this.gimmeMax());
+            // ...더 많은 초기화 작업들
+        }
+    }).init();
+    ```
+    - 단 한번의 초기화 작업을 실행하는동안 전역 네임스페이스를 보호할 수있다.
+    - 초기화 작업이 복잡하다면 전체 초기화 절차를 구조화하는데 도움이 된다.
+    - 이 패턴은 주로 일회성 작업
+    - init()이 완료되고 나면 객체에 접근할 수 없다.
+    - init()이 완료된 이후 객체의 참조를 유지하고 싶다면 init()의 마지막에 return this;를 추가해라.
+### 4.7 초기화 시점의 분기
+- 초기화 시점의 분기(로드 타임 분기)는 최적화 패턴이다.
+- 어떤 조건이 프로그램의 생명주기 동안 변경되지 않는 확실할 경우, 조건을 단 한번만 확인하는 것이 바람직하다.
+- 브라우저 탐지가 전형적인 예!
+    - XMLHttpRequest가 내장 객체로 지원되는 걸확인했다면, 프로그램 실행 중에 브라우저가 바뀌어 난데없이 ActiveX객체를 다루게 될리는 없다.
+    - 실행 환경은 변하지 않기 때문에, 코드가 XHR 객체를 지원하는지 매번 다시 확인할 필요가 없다.
+- DOM 엘리먼트의 계산된 스타일을 확인하거나 이벤트 핸들러를 붙이는 작업도 초기화 시점 분기 패턴의 이점을 살릴 수 있는 또 다른 후보들.
+- 이벤트 리스너를 등록하고 해제하는 메서드를 가지는 유틸리티 구현
+    ```javascript
+    // 변경 이전
+    var utils = {
+        addListener: function (el, type, fn) {
+            if (typeof widnow.addEventListener === 'function') {
+                el.addEventListener(type, fn, false);
+            } else if (typeof document.attachEvent === 'function') {
+                // IE
+                el.attachEvent('on' + type, fn);
+            } else {
+                el['on' + type] = fn;
+            }
+        },
+        removeListener: function (el, type, fn) {
+            // 거의 동일한 코드...
+        }
+    };
+    ```
+    - 이 코드는 비효율적. utils.addListener(), utils.removeListener()를 호출할 때마다 똑같은 확인 작업이 반복해서 실행
+- 초기화 시점 분기를 이용하면, 처음 스크립트를 로딩하는 동안에 브라우저 기능을 한번만 확인합니다.
+    - 확인과 동시에 함수가 페이지의 생명주기 동안 어떻게 동작할 지를 재정의
+    ```javascript
+    // 변경 이후
+    // 인터페이스
+    var utils = {
+        addListener: null,
+        removeListener: null
+    };
+
+    // 구현
+    if (typeof window.addEventListener === 'function') {
+        utils.addListener = function (el, type, fn) {
+            el.addEventListener(type, fn, false);
+        };
+        utils.removeListener = function (el, type, fn) {
+            el.removeEventListener(type, fn, false);
+        };
+    } else if (typeof document.attacheEvent === 'function') { // IE
+        utils.addListener = function (el, type, fn) {
+            el.attachEvent('on' + type, fn);
+        };
+        utils.removeListener = function (el, type, fn) {
+            el.detachEvent('on' + type, fn);
+        };
+    } else { // 구형 브라우저
+        utils.addListener = function (el, type, fn) {
+            el['on' + type] = fn;
+        };
+        utils.removeListener = function (el, type, fn) {
+            el['on' + type] = null;
+        };
+    }
+    ```
+    - 브라우저 기능은 독립적으로 변한다.
+    - 가장 좋은 전략은 초기화 시점의 분기를 사용해 기능을 개별적으로 탐지하는 것.
+
+### 4.8 함수 프로퍼티 - 메모이제이션(Memoization)) 패턴
+- 함수는 객체이기 때문에 프로퍼티를 가질 수 있다.
+- 사실 함수는 처음부터(생성될떄부터) 프로퍼티와 메서드를 가지고 있다.
+- 각 함수는 어떤 문법으로 생성하든 자동으로 length 프로퍼티를 갖는다. 함수가 받는 인자의 개수를 값으로 가진다.
+    ```javascript
+    function func(a, b, c) {}
+    console.log(func.length); // 3
+    ```
+- 함수에 프로퍼티를 추가하여 결과(반환 값)를 캐시하면 다음 호출 시점에 복잡한 연산을 반복하지 않을 수 있다.
+##### 메모이제이션 패턴 예제
+- myFunc함수에 cache프로퍼티를 생성한다.
+- 이 프로퍼티는 일반적인 프로퍼티처럼 myFunc.cache와 같은 형태로 접근 가능
+- cache 프로퍼티는 함수로 전달된 param 매개변수를 키로 사용하고 꼐산의 결과를 값으로 가지는 객체(해시)다.
+- 결과 값은 필요에 따라 복잡한 데이터 구조로 저장 가능
+```javascript
+var myFunc = function (param) {
+    if (!myFunc.cache[param]) {
+        var result = {};
+        myFunc.cache[param] = result;
+    }
+
+    return myFunc.cahce[param];
+};
+// 캐시 저장 공간
+myFunc.cache = {};
+```
+- 만약 더 많은 매개변수와 더 복잡한 타입을 갖는다면 일반적으로 직렬화하여 해결할 수 있을다.
+    - 예를 들어 JSON문자열로 직렬화하고 이 문자열을 cache객체로 키로 사용할 수있다.
+    ```javascript
+    var myFunc = function () {
+        var cachekey = JSON.stringify(Array.prototype.slice.call(arguments)),
+            result;
+        
+        if (!myFunc.cache[cachekey]) {
+            result = {};
+            myFunc.cache[cachekey] = result;
+        }
+        return myFunc.cache[cachekey];
+    };
+
+    // 캐시 저장 공간
+    myFunc.cache = {};
+    ```
+    - 직렬화 하면 객체를 식별할 수 없게 되는 것을 주의하라.
+    - 만약 같은 프로퍼티를 가지는 두 개의 다른 객체를 직렬화 하면, 이 두 객체는 같은 캐시 항목을 공유하게 될 것이다.
+    - arguments.callee를 이용해서 함수이름 하드코딩하지말자! (ECMAScript 5 스트릭 모드에서는 허용되지 않아...)
+    ```javascript
+    var myFunc = function (param) {
+        var f = arguments.callee,
+            result;
+        
+        if (!f.cache[param]) {
+            result = {};
+            f.cache[param] = result;
+        }
+        return f. cache[param];
+    };
+
+    // 캐시 저장공간
+    myFunc.cache = {};
+    ```
+### 4.9 설정 객체 패턴
+- 좀 더 깨끗한 API를 제공하는 방법
+- 라이브러리나 다른프로그램에서 사용할 코드를 만들때 유용
+- DOM 엘리먼트를 생성할 때나 엘리먼트의 CSS 스타일을 지정할 때 유용.
+    - 엘리먼트와 스타일은 많은 수의 어트리뷰트와 프로퍼티를 가지며 대부분은 선택적인 값이기 때문.
+```javascript
+function addPerson(first, last, dob, gender, address) {
+    //...
+}
+
+addPerson("Bruce", "Wayne", new Date(), null, null, "batman");
+```
+##### 설정 객체의 장점
+- 매개변수와 순서를 기억할 필요 X
+- 선택적인 매개변수를 안전하게 생략할 수 있다.
+- 읽기 쉽고 유지보수하기 편하다.
+- 매개변수를 추가하거나 제거하기가 편하다.
+##### 설정 객체의 단점
+- 매개변수의 이름을 기억해야 한다.
+- 프로퍼티 이름은 압축되지 않는다.
+
+```javascript
+addPerson(conf);
+var conf = {
+    username: 'batman',
+    first: 'Bruce',
+    last: 'Wayne'
+};
+```
+### 4.10 커리(Curry)
+#### 함수 적용
+- 함수는 불려지거나 호출된다고 표현하기보다는 적용(apply)된다고 표현한다.
+- Function.prototype.apply()를 사용하면 함수를적용할 수 있다.
+```javascript
+var sayHi = function (who) {
+    return `Hello~ ${who ? ","+who: ""}!`;
+};
+
+sayHi();
+sayHi('Jodeng');
+
+sayHi.apply(null, ["hello"]); // 첫번째 매개변수가 null이면 this는 전역객체를 가리킴.
+```
+- apply는 두개의 매개변수를 갖는다.
+    - apply(context, [params]);
+    - 첫번째 매개변수는 이 함수 내에 this와 바인딩할 객체
+    - 두번째는 배열 또는 인자(arguments)로 함수 내부에서 배열과 비슷한 형태의 arguments 객체로 사용하게 된다.
+    - 첫번째 매개변수가 null 이면, this는 전역 객체를 가리킴.
+```javascript
+var alien = {
+    sayHi: function (who) {
+        return `Hello! ${who}!`;
+    }
+};
+
+alien.sayHi('world');
+sayHi.apply(alien, ['humans']);
+sayHi.call(alien, 'humans'); // sayHi.call(alien, 'humans', 'hi', ...)
+```
+- call은 apply와 같은 일함.
+- 다만 두번째 매개변수가 배열(apply), call(, , 쭉 쉼표로 이어나감)
+#### 부분적인 적용
+```javascript
+var add = function (x, y) {
+    return x + y;
+};
+add.apply(null, [5, 4]);
+var newadd = add.partialApply(null, [5]);
+newadd.apply(null, [4]);
+
+// 이것은 사실 add(5)(4)와 같음.. 
+```
+- 함수가 부분적인 적용을 이해하고 처리할 수 있도록 만드는 과정을 '커링'이라고 한다!
+#### 커링(Curring)
+- 수학자 하스켈 커리로 부터 유래
+- 커링은 함수를 변형하는 과정
+- 자바스크립트에서는 add()함수를 수정하여 부분 적용을 처리하는 커링 함수로 만들 수 있다.
+    ```javascript
+        function add(x, y) {
+            var oldx = x, oldy = y;
+            if (typeof oldy === 'undefined') {
+                return function (newy) {
+                    return oldx = newy;
+                };
+            }
+            // 전체 인자를 적용
+            return x + y;
+        }
+
+        typeof add(5); // 'function'
+        add(3)(4);
+
+        // 새로운 함수를 만들어 저장
+        var add2000 = add(2000);
+        add2000(10);
+        ```
+#### 커링을 사용해야 할 경우
+- 어떤 함수를 호출할 때 대부분의 매개변수가 항상 비슷하다면, 커링의 적합한 후보라 할 수 있다.
+- 매개변수 일부를 적용하여 새로운 함수를 동적으로생성하면 이 함수는 반복되는 매개변수를 내부적으로 저장하여, 매번 인자를 전달하지 않아도 원본 함수가 기대하는 전체 목록을 미리 채워 놓을것이다.

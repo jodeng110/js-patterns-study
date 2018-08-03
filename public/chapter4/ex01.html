@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Chapter3 - ex01</title>
+</head>
+<body>
+    <script>
+    // 안티패턴! 데모의 목적으로만 사용해라
+    var add = new Function('a, b', 'return a + b');
+    console.log(add(1, 2)); // 3
+
+    // 기명 함수 표현식
+    var add1 = function add(a, b) {
+        return a + b;
+    };
+
+    // 함수 표현식, 무명 함수 표현식, 익명 함수
+    var add2 = function (a, b) {
+        return a + b;
+    }
+
+    // 함수 선언문
+    function add3 (a, b) {
+        return a + b;
+    }
+
+    function foo() {}
+    var bar = function () {};
+    var baz = function baz() {};
+
+    console.log(foo.name);
+    console.log(bar.name);
+    console.log(baz.name);
+
+    // 안티패턴 - 데모를 위해 사용한것
+
+    // 전역 변수
+    function foo() {
+        console.log('global foo()');
+    }
+    function bar() {
+        console.log('global bar()');
+    }
+
+    function hoistMe() {
+        console.log(typeof foo);
+        console.log(typeof bar);
+
+        foo();
+        // bar(); // TypeError: bar is not a function
+
+        // 함수 선언문
+        function foo() {
+            console.log('local foo()');
+        }
+
+        var bar = function () {
+            console.log('local bar()');
+        }; 
+
+    }
+
+    hoistMe();
+
+    // 콜백패턴
+    function writeCode(callback) {
+        // 어떤 작업 수행
+        console.log('[writeCode]호출');
+        callback();
+    }
+
+    function introduceBugs() {
+        console.log('[call instruduceBugs]');
+    }
+
+    writeCode(introduceBugs);
+
+    // 함수 반환하기
+    var setup = function () {
+        console.log(1);
+        return function () {
+            console.log(2);
+        }
+    };
+
+    var my = setup();
+    my();
+    var my2 = setup();
+    my2();
+
+    my();
+    my();
+
+    var counting = function () {
+        var count = 0;
+        return function () {
+            return (count += 1);
+        };
+    };
+
+    var next = counting();
+    console.log(next()); // 1
+    console.log(next()); // 2
+    console.log(next()); // 3
+    console.log(next()); // 4
+    console.log(next()); // 5
+    console.log(next()); // 6
+    
+    // 자기 자신을 정의하는 함수
+    var scareMe = function () {
+        console.log('Boo!');
+        scareMe = function () {
+            console.log('double Boo!');
+        };
+    };
+
+    scareMe(); // Boo!
+    scareMe();  // double Boo!
+
+    var scareMe2 = function () {
+        console.log('Boo!');
+        scareMe2 = function () {
+            console.log('double Boo!');
+        };
+    };
+
+    // 1. 새로운 프로퍼티 추가
+    scareMe2.property = 'properly';
+
+    // 2. 다른 이름으로 할당
+    var prank = scareMe2;
+
+    // 3. 메서드로 사용한다.
+    var spooky = {
+        boo: scareMe2
+    };
+
+    // 새로운 이름으로 호출
+    console.log('새로운 이름으로 호출');
+    prank(); // Boo!
+    prank(); // Boo!
+    console.log('prank.property : ', prank.property); // properly
+
+    // 메서드 호출
+    console.log('메서드 호출');
+    spooky.boo(); // Boo!
+    spooky.boo(); // Boo!
+    console.log('spooky.boo.property : ', spooky.boo.property); // properly
+
+    // 자기 자신을 재정의한 함수 사용
+    console.log('자기 자신을 재정의한 함수 사용');
+    scareMe2(); // double Boo!
+    scareMe2(); // double Boo!
+    console.log('scareMe2.property : ', scareMe2.property); //undefined
+
+
+    (function () {
+        var days = ['일', '월', '화', '수', '목', '금', '토'],
+            today = new Date(),
+            msg = `오늘은 ${today}, ${days[today.getDay()]}요일 입니다.`;
+
+        console.log(msg);
+    })();
+
+    (function (who, when) {
+        console.log(`나는 ${who}님을 ${when}에 만났어용!`);
+    })('조뎅', new Date());
+
+    var getResult = (function () {
+        var res = 2 + 2;
+        return function () {
+            return res;
+        }
+    })();
+
+    var o = {
+        message: (function () {
+            var who = 'me',
+                what = 'call';
+            return what + ' ' + who;
+        })(),
+        getMsg: function () {
+            return this.message;
+        }
+    };
+
+    console.log(o.getMsg());
+    console.log(o.message);
+
+    // 함수 프로퍼티 - 메모이제이션
+    function func(a, b, c) {}
+    console.log(func.length);
+
+    // apply
+    var sayHi = function (who) {
+        return `Hello~ ${who ? who : ""}!`;
+    };
+
+    console.log(sayHi());
+    console.log(sayHi('Jodeng'));
+
+    console.log(sayHi.apply(null, ["hello"]));
+
+    var alien = {
+        sayHi: function (who) {
+            return `Hello! ${who}!`;
+        }
+    };
+
+    console.log(alien.sayHi('world'));
+    console.log(sayHi.apply(alien, ['humans']));
+
+    function add(x, y) {
+        var oldx = x, oldy = y;
+        if (typeof oldy === 'undefined') {
+            return function (newy) {
+                return oldx = newy;
+            };
+        }
+        // 전체 인자를 적용
+        return x + y;
+    }
+
+    console.log(typeof add(5)); // 'function'
+    add(3)(4);
+
+    // 새로운 함수를 만들어 저장
+    var add2000 = add(2000);
+    add2000(10);
+    </script>
+</body>
+</html>
