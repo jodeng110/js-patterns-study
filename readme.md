@@ -756,7 +756,7 @@ function Waffle() {
 
 // 새로운 객체
 var good_morning = new Waffle();
-console.log(typeof good_morning);
+console.log(typeof good_morning); // object
 console.log(good_morning.tastes);
 
 // 안티패턴: 'new'를 빼먹었다.
@@ -765,7 +765,37 @@ console.log(typeof good_morning2); // undefined
 console.log(window.tastes); // 'yummy'
 ```
 #### 명명 규칙
+- 생성자 함수명의 첫글자를 대문자로 쓰자.
+- 일반적인 함수와 메서드의 첫글자는 소문자 사용.
+
 #### that 사용
+- 생성자가 항상 생성자로 동작하도록 해주는 패턴
+```javascript
+function Waffle1() {
+    var that = {}; // 변수명은 that말고 self, me도 많이 사용한다.
+    that.tastes = 'yummy1';
+    return that;
+}
+
+function Waffle2() {
+    return {
+        tastes: 'yummy2'
+    };
+}
+
+var first = new Waffle1(),
+    second = Waffle2();
+
+console.log(first.tastes);
+console.log(second.tastes);
+
+/*
+생성자 함수 호출 방법과 상관없이 항상 객체 반환
+*/
+
+```
+- 이 패턴의 문제는 프로토타입과의 연결고리르 잃어버리게 됨.
+- 즉, Waffle() 프로토타입에 추가한 멤버를 객체에서 사용할 수 없다.
 #### 스스로를 호출하는 생성자
 ```javascript
 function Waffle() {
@@ -776,6 +806,37 @@ function Waffle() {
     this.tastes = 'yummy';
 }
 ```
+- 생성자 내부에서 this가 해당 생성자의 인스턴스인지를 확인하고, 그렇지 않으면 new와 함꼐 스스로를 재호출
+    ```javascript
+    function Waffle() {
+        if (!(this instanceof Waffle)) {
+            return new Waffle();
+        }
+        this.tastes = 'yummy';
+    }
+
+    Waffle.prototype.wantAnother = true;
+
+    var first = new Waffle(),
+        second = Waffle();
+
+    console.log(first.tastes);
+    console.log(second.tastes);
+
+    console.log(first.wantAnother);
+    console.log(second.wantAnother);
+    ```
+- 인스턴스를 판별하는 방법
+    ```javascript
+    if (!(this instanceof arguments.callee)) {
+        return new arguments.callee();
+    }
+    ```
+    - 함수가 호출될 때, 내부적으로 arguments라는 객체가 생성.
+    - 함수에 전달된 모든 인자를 담고 있다는 점을 활용
+    - arguments의 callee라는 프로퍼티는 호출된 함수를 가르킨다.
+    - arguments.callee는 ES5의 스트릭 모드에서 허용되지 않음.
+
 ### 3.4 배열 리터럴
 ```javascript
 // 안티 패턴
