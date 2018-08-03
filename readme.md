@@ -1724,24 +1724,61 @@ newadd.apply(null, [4]);
 - 커링은 함수를 변형하는 과정
 - 자바스크립트에서는 add()함수를 수정하여 부분 적용을 처리하는 커링 함수로 만들 수 있다.
     ```javascript
-        function add(x, y) {
-            var oldx = x, oldy = y;
-            if (typeof oldy === 'undefined') {
-                return function (newy) {
-                    return oldx = newy;
-                };
-            }
-            // 전체 인자를 적용
-            return x + y;
+    function add(x, y) {
+        var oldx = x, oldy = y;
+        if (typeof oldy === 'undefined') {
+            return function (newy) {
+                return oldx + newy;
+            };
         }
+        // 전체 인자를 적용
+        return x + y;
+    }
 
-        typeof add(5); // 'function'
-        add(3)(4);
+    typeof add(5); // 'function'
+    add(3)(4); // 7
 
-        // 새로운 함수를 만들어 저장
-        var add2000 = add(2000);
-        add2000(10);
-        ```
+    // 새로운 함수를 만들어 저장
+    var add2000 = add(2000);
+    add2000(10); // 2010
+    ```
+- 어떤 함수라도 부분적인 매개변수를 받는 새로운 함수로 변형할 수 있을까?
+    ```javascript
+    function curry (fn) {
+        var slice = Array.prototype.slice,
+            stored_args = slice.call(arguments, 1);
+        return function () {
+            var new_args = slice.call(arguments),
+                args = stored_args.concat(new_args);
+            return fn.apply(null, args);
+        };
+    }
+
+    function add(x, y) {
+        return x + y;
+    }
+
+    // 함수를 커링하여 새로운 함수를 얻는다
+    var newadd = curry(add, 5);
+    newadd(4); // 9
+
+    // 반환되는 새로운 함수를 바로 호출할 수 있다.
+    curry(add, 6)(7); // 13
+
+    // 일반함수
+    function add(a, b, c, d, e) {
+        return a + b + c + d + e;
+    }
+
+    curry(add, 1, 2, 3)(5, 5); // 16
+
+    // 2단계의 커링
+    var addOne = curry(add, 1);
+    addOne(10, 10, 10, 10); // 41
+    var addSix = curry(addOne, 2, 3);
+    addSix(5, 5); // 16
+    ```
+
 #### 커링을 사용해야 할 경우
 - 어떤 함수를 호출할 때 대부분의 매개변수가 항상 비슷하다면, 커링의 적합한 후보라 할 수 있다.
 - 매개변수 일부를 적용하여 새로운 함수를 동적으로생성하면 이 함수는 반복되는 매개변수를 내부적으로 저장하여, 매번 인자를 전달하지 않아도 원본 함수가 기대하는 전체 목록을 미리 채워 놓을것이다.

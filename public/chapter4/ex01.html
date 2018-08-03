@@ -210,24 +210,60 @@
 
     console.log(alien.sayHi('world'));
     console.log(sayHi.apply(alien, ['humans']));
-
-    function add(x, y) {
+    
+    // 커링1
+    function add5(x, y) {
         var oldx = x, oldy = y;
         if (typeof oldy === 'undefined') {
             return function (newy) {
-                return oldx = newy;
+                return oldx + newy;
             };
         }
         // 전체 인자를 적용
         return x + y;
     }
-
-    console.log(typeof add(5)); // 'function'
-    add(3)(4);
+    console.log(add5(3));
+    console.log(typeof add5(5)); // 'function'
+    console.log(add5(3)(4));
 
     // 새로운 함수를 만들어 저장
-    var add2000 = add(2000);
-    add2000(10);
+    var add2000 = add5(2000); // 7
+    console.log(add2000(10)); // 2010
+
+    // 커링2
+    function curry (fn) {
+        var slice = Array.prototype.slice,
+            stored_args = slice.call(arguments, 1);
+        return function () {
+            var new_args = slice.call(arguments),
+                args = stored_args.concat(new_args);
+            return fn.apply(null, args);
+        };
+    }
+
+    function add6(x, y) {
+        return x + y;
+    }
+
+    // 함수를 커링하여 새로운 함수를 얻는다
+    var newadd = curry(add6, 5);
+    console.log(newadd(4)); // 9
+
+    // 반환되는 새로운 함수를 바로 호출할 수 있다.
+    console.log(curry(add6, 6)(7)); // 13
+
+    // 일반함수
+    function add7(a, b, c, d, e) {
+        return a + b + c + d + e;
+    }
+
+    console.log(curry(add7, 1, 2, 3)(5, 5)); // 16
+
+    // 2단계의 커링
+    var addOne = curry(add7, 1);
+    console.log(addOne(10, 10, 10, 10)); // 41
+    var addSix = curry(addOne, 2, 3);
+    console.log(addSix(5, 5)); // 16
     </script>
 </body>
 </html>
