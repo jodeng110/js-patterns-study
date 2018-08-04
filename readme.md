@@ -2335,12 +2335,249 @@ Sandbox.prototype = {
 };
 ```
 ### 5.6 스태틱 멤버
+- 스태틱 프로퍼티와 메서드란 인스턴스에 따라 달라 지지 않는 프로퍼티와 메서드
+- 공개 스태틱 멤버는 클래스의 인스턴스를 생성하지 않고도 사용 가능.
+- 비공개 스태틱 멤버는 클래스 사용자에게는 보이지 않지만 클래스의 인스턴스들은 모두 함께 사용할 수 있다.
 #### 공개 스태틱 멤버
+```javascript
+// 생성자
+var Gadget = function () {};
+Gadget.isShiny = function () {
+    return '반짝반짝 빛나는 구나!';
+};
+Gadget.prototype.setPrice = function (price) {
+    this.price = price;
+};
+
+// 스태틱 메서드 호출
+Gadget.isShiny();
+
+// 인스턴스 생성 후 메서드 호출
+var iphone = new Gadget();
+iphone.setPrice(500);
+```
+- 메서닥 스태틱한 방법으로, 스태틱 하지 않은 방법으로도 호출될 때는?
+    ```javascript
+    var Gadget = function (price) {
+        this.price = price;
+    };
+
+    // 스태틱 메서드
+    Gadget.isShiny = function () {
+        var msg = 'you bet';
+
+        if (this instanceof Gadget) {
+            // 스태틱하지 않고 인스턴스로 호출되었을때
+            msg += `, it costs $${this.price}!`;
+        }
+
+        return msg;
+    };
+
+    Gadget.prototype.isShiny = function () {
+        return Gadget.isShiny.call(this);
+    };
+
+    // 스태틱 메서드 호출
+    Gadget.isShiny(); // 'you bet'
+
+    // 인스턴스를 통해 스태틱하지 않은 방법으로 호출
+    var a = new Gadget(499.99);
+    a.isShiny(); // 'you bet, it consts $ 499.99!'
+    ```
+- ES6 Class에서는 static 예약어 제공
+```javascript
+class Point {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    static distance(a, b) {
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+
+        return Math.hypot(dx, dy);
+    }
+};
+
+const p1 = new Point(5, 5);
+const p2 = new Poinst(10, 10);
+
+console.log(Point.distance(p1, p2));
+```
 #### 비공개 스태틱 멤버
+- 비공개 스태틱 멤버란?
+    - 동일한 생성자 함수로 생성된 객체들이 공유하는 멤버
+    - 생성자 외부에서는 접근 불가
+- Gadget 생성자 안에 counter라는 비공개 스태틱 프로퍼티 구현 예제
+    - 먼저 클로저 함수 만들고
+    - 비공개 멤버를 이 함수로 감싼 후
+    - 이 함수를 즉시 실행한 결과로 새로운 함수를 반환
+    ```javascript
+    var Gadget = (function () {
+        // 스태틱 변수/프로퍼티
+        var counter = 0;
 
+        // 생성자의 새로운 구현 버전 반환
+        return function () {
+            console.log(counter += 1);
+        };
+    })();
+
+    var g1 = new Gadget(); // 1
+    var g2 = new Gadget(); // 2
+    var g3 = new Gadget(); // 3
+    ```
+    - g1, g2, g3모든 인스턴스가 counter값을 공유
+- 비공개 스태틱 프로퍼티에 접근할 수 있는 특권메서드 추가
+    ```javascript
+    var Gadget = (function () {
+        // 스태틱 변수 프로퍼티
+        var counter = 0, NewGadget;
+
+        // 이 부분이 생성자를 새롭게 구현한 부분
+        NewGadget = function () {
+            counter += 1;
+        };
+
+        // 특권 메서드
+        NewGadget.prototype.getLastId = function () {
+            return counter;
+        };
+
+        // 생성자를 덮어쓴다.
+        return NewGadget;
+    })();
+
+    var g1 = new Gadget();
+    g1.getLastId(); // 1
+
+    var g2 = new Gadget();
+    g2.getLastId(); // 2
+
+    var g3 = new Gadget();
+    g3.getLastIe(); // 3
+    ```
+- 공개 / 비공개 스태틱 프로퍼티는 상당히 편리하다
+    - 특정 인스턴스에 한정되지 않는 메서드와 데이터
+    - 인스턴스별로 매번 재생성되지도 않음.
 ### 5.7 객체 상수
+- ES6 const 예약어를 통해 상수 정의 가능
+- 명명 규칙을 이용하여 모두 대문자와 '_'사용
+##### constant 객체 구현
+- constant는 다음과 같은 메서드를 제공
+    - set(name, value) : 새로운 상수 정의
+    - isDefined(name) : 특정 이름의 상수가 있는지 확인
+    - get(name) : 상수의 값을 가져온다.
+- 이 예제는 상수 값으로 원시 데이터 타입만 허용
+- 선언하려는 상수의 이름이 toString, hasOwnProperty등 내장 프로퍼티의 이름과 겹치지 않도록 보장하기 위해 hasOwnProperty()를 사용한 별도의 확인 작업을 거침.
+- 모든 상수의 이름 앞에 접두어 붙임
+```javascript
+var constant = (function () {
+    var constants = {},
+        ownProp = Object.prototype.hasOwnProperty,
+        allowed = {
+            stirng: 1,
+            number: 1,
+            boolean: 1
+        },
+        prefix = (Math.random() + '_').slice(2);
+    return {
+        set: function (name, value) {
+            if (this.isDefined(name)) {
+                return false;
+            }
+            if (!ownProp.call(allowed, typeof value)) {
+                return false;
+            }
+            constants[`${prefix}${name}`] = value;
+            return true;
+        },
+        isDefined: function (name) {
+            return ownProp.call(constants, `${prefix}${name}`);
+        },
+        get: function (name) {
+            if (this.isDefined(name)) {
+                return constants[`${prefix}${name}`];
+            }
+            return null;
+        }
+    };
+})();
 
+constant.isDefined('maxwidth'); // false
+constant.set('maxwidth', 480); // true
+constant.isDefined('maxwidth'); // true
+constant.set('maxwidth', 320); // false
+constant.get('maxwidth'); // 480
+```
 ### 5.8 체이닝 패턴
-#### 체이닝 패턴의 장단점
+- 연쇄적으로 메서들르 호출할 수 있도록 하는 패턴
+    - ex) myobje.method1('hello').method2().method3('world').method4();
+- 만약 메서드에 의미있는 반환값이 존재하지 않는다면, 현재 작업중인 객체 인스턴스인 this반환
+```javascript
+var obj = {
+    value: 1,
+    increament: function () {
+        this.value += 1;
+        return this;
+    },
+    add: function (v) {
+        this.value += v;
+        return this;
+    },
+    soute: function () {
+        alert(this.value);
+    },
+    log: function () {
+        console.log(`value: ${this.value}`);
+    }
+};
 
+// 메서드 체이닝 호출
+obj.increament().add(3).log();
+obj.increament();
+obj.add(100);
+obj.log();
+```
+#### 체이닝 패턴의 장단점
+- 장점
+    - 코드량 줄어듦
+    - 좀 더 간결해져 하나의 문장처럼 읽히게 됨.
+    - 함수를 쪼개는 방법을 생각할 수 있게 됨.
+    - 유지보수 개선
+- 단점
+    - 디버깅하기 어려움
+    - 여러개의 메서드중 하나가 실패해버리면, 실패한 메서드가 어느것인지 알아내기 어려움.
+    - 클린 코드의 저자 로버트 마틴은 이러한 상황을 '열차 사고'패턴 이라고 함.
+- Usage
+    - jQuery 라이브러리 등에서 널리 사용
+    - DOM의 요소들은 체이닝 패턴 이용
+        - ex) document.getElementsByTagName('head')[0].appendChild(newnode);
 ### 5.9 method() 메서드
+- 생성자 본문 내에서 인스턴스 프로퍼티를 추가할 수 있다
+- 생성자 함수 사용법은 this에 인스턴스 메서드를 추가하게 되면 인스턴스가 생성될 때 마다 메서드가 재생성되어 메모리를 잡아먹기 때문에 비효율적!
+- 재사용 가능한 메서드는 생성자의 prototype프로퍼티에 추가되어야 함.
+    - 이 부분을 method()라는 메서드에 숨겨두는 것 (syntax sugar)
+```javascript
+// method() 구현
+if (typeof Function.prototype.method !== 'function') {
+    Function.prototype.method = function (name, implementation) {
+        this.prototype[name] = implementation;
+        return this;
+    };
+}
+var Person = function (name) {
+    this.name = name;
+}.method('getName', function () {
+    return this.name;
+}).method('setName', function (name) {
+    this.name = name;
+    return this;
+});
+
+var p = new Person('Cho');
+p.getName(); // Cho
+p.setName('Jodeng').getName(); // Jodeng
+```

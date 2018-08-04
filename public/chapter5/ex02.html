@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Chapter5 - 비공개 스태틱 멤버, const(contant) 구현, 메서드 체이닝 패턴</title>
+</head>
+<body>
+  <script>
+    /* 비공개 스태틱 멤버 구현 */
+    var Gadget = (function () {
+        // 스태틱 변수 프로퍼티
+        var counter = 0, NewGadget;
+
+        // 이 부분이 생성자를 새롭게 구현한 부분
+        NewGadget = function () {
+            counter += 1;
+        };
+
+        // 특권 메서드
+        NewGadget.prototype.getLastId = function () {
+            return counter;
+        };
+
+        // 생성자를 덮어쓴다.
+        return NewGadget;
+    })();
+
+    var g1 = new Gadget();
+    console.log(g1.getLastId()); // 1
+
+    var g2 = new Gadget();
+    console.log(g2.getLastId()); // 2
+
+    var g3 = new Gadget();
+    console.log(g3.getLastId()); // 3
+
+    /* const 구현해보자! */
+    var constant = (function () {
+        var constants = {},
+            ownProp = Object.prototype.hasOwnProperty,
+            allowed = {
+                stirng: 1,
+                number: 1,
+                boolean: 1
+            },
+            prefix = (Math.random() + '_').slice(2);
+        return {
+            set: function (name, value) {
+                if (this.isDefined(name)) {
+                    return false;
+                }
+                if (!ownProp.call(allowed, typeof value)) {
+                    return false;
+                }
+                constants[`${prefix}${name}`] = value;
+                return true;
+            },
+            isDefined: function (name) {
+                return ownProp.call(constants, `${prefix}${name}`);
+            },
+            get: function (name) {
+                if (this.isDefined(name)) {
+                    return constants[`${prefix}${name}`];
+                }
+                return null;
+            }
+        };
+    })();
+
+    console.log(constant.isDefined('maxwidth')); // false
+    console.log(constant.set('maxwidth', 480)); // true
+    console.log(constant.isDefined('maxwidth')); // true
+    console.log(constant.set('maxwidth', 320)); // false
+    console.log(constant.get('maxwidth')); // 480
+
+    /* 메서드 체이닝 패턴 */
+    var obj = {
+        value: 1,
+        increament: function () {
+            this.value += 1;
+            return this;
+        },
+        add: function (v) {
+            this.value += v;
+            return this;
+        },
+        soute: function () {
+            alert(this.value);
+        },
+        log: function () {
+            console.log(`value: ${this.value}`);
+        }
+    };
+
+    // 메서드 체이닝 호출
+    obj.increament().add(3).log(); // 5
+    obj.increament();
+    obj.add(100);
+    obj.log(); // 106
+
+    /*
+    메서드 체이닝 패턴을 이용한 method()구현
+    - 생성자 함수 prototype 메서드 등록을 메서드 체이닝을 이용하여 한줄 표현
+    */
+    if (typeof Function.prototype.method !== 'function') {
+        Function.prototype.method = function (name, implementation) {
+            this.prototype[name] = implementation;
+            return this;
+        };
+    }
+    var Person = function (name) {
+        this.name = name;
+    }.method('getName', function () {
+        return this.name;
+    }).method('setName', function (name) {
+        this.name = name;
+        return this;
+    });
+
+    var p = new Person('Cho');
+    console.log(p.getName()); // Cho
+    console.log(p.setName('Jodeng').getName()); // Jodeng
+  </script>
+</body>
+</html>
