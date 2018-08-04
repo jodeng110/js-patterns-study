@@ -1782,3 +1782,565 @@ newadd.apply(null, [4]);
 #### 커링을 사용해야 할 경우
 - 어떤 함수를 호출할 때 대부분의 매개변수가 항상 비슷하다면, 커링의 적합한 후보라 할 수 있다.
 - 매개변수 일부를 적용하여 새로운 함수를 동적으로생성하면 이 함수는 반복되는 매개변수를 내부적으로 저장하여, 매번 인자를 전달하지 않아도 원본 함수가 기대하는 전체 목록을 미리 채워 놓을것이다.
+
+## Chapter 5 객체 생성 패턴
+### 5.1 네임스페이스 패턴
+- 네임스페이스는 프로그램에서 필요로 하는 전역 벼 ㄴ수의 개수를 줄이는 동시에 과도한 접두어를 사용하지 않고도 이름이 겹치지 않게 해준다.
+- 자바스크립트 언어 문법에 내장되어 있지는 않지만, 네임스페이스는 꽤 쉽게 구현할 수 있는 기능이다.
+- 수많은 함수, 객체, 변수들로 전역 유효범위를 어지럽히는 대신, 애플리케이션이나 라이브러리르 위한 전역 객체를 하나 만들고 모든 기능을 이 객체에 추가한다.
+```javascript
+// 안티 패턴 - 수정전
+// 생성자 함수 2개
+function Parent() {}
+function Child() {}
+
+// 변수 1개
+var some_var = 1;
+
+// 객체 2개
+var module1 = {};
+module1.data = {a: 1, b: 2};
+var module2 = {};
+```
+- 위의 코드를 리팩토링 해보자!
+```javascript
+// 수정 후 - 전역 변수 1개
+function MYAPP = {};
+
+// 생성자
+MYAPP.Parent = function () {};
+MYAPP.Child = function () {};
+
+// 변수
+MYAPP.some_var = 1;
+
+// 객체 컨테이너
+MYAPP.modules = {};
+
+// 객체들을 컨테이너 안에 추가
+MYAPP.modules.module1 = {};
+MYAPP.modules.module1.data = {a: 1, b: 2};
+MYAPP.modules.module2 = {};
+```
+- 전역 네임스페이스 객체의 이름은 애플리케이션 이름이나 라이브러리의 이름, 도메인명, 회사 이름 중에서 선택할 수 있다.
+- 흔히 전역 객체 이름은 모두 대문자로 쓰는 명명규칙을 사용하기도 한다.
+- 코드에 네임스페이스를 지정해주며,  코드 내의 이름 충돌 뿐 아니라 이 코드와 같은 페이지에 존재하는 자바스크립트 라이브러리나 위젯 등 서드파티 코드와의 이름 충돌도 방지해준다.
+##### 네임스페이스 패턴의 단점
+- 모든 변수와 함수에 접두어를 붙여야 하기 떄문에 전체적으로 코드량이 약간 더 많아지고, 따라서 다운로드 파일크기도 늘어남.
+- 전역 인스턴스가 단 하나뿐이기 떄문에 코드의 어느 한 부분이 수정되어도 전역 인스턴스를 수정하게 된다. 즉 나머지 기능들도 갱신된 상태를 물려받는다.
+- 이름이 중첩되고 길어지므로 프로퍼티를 판별하기 위한 검색 작업도 길고 느려진다.
+    - 이 단점을 해결하는 '샌드박스 패턴'이 있다!
+#### 범용 네임스페이스 함수
+- 네임 스페이스에 추가하려는 프로퍼티가 이미 존재할 수도 있고 따라서 내용을 엎어쓰게 될지도 모른다.
+- 네임스페이스를 생성하거나 프로퍼티를 추가하기 전에 먼저 이미 존재하는지 여부 확인할 것!
+```javascript
+// 위험해!
+var MYAPP = {};
+// 개선안
+if (typeof MYAPP === 'undefined') {
+    var MYAPP = {};
+}
+
+// 또는 더 짧게 쓸 수 있다.
+var MYAPP = MYAPP || {};
+```
+- 이렇게 추가되는 확인 작ㅇ버 때문에 상당량의 중복 코드가 생겨날 수 있다.
+- 네임스페이스 생성의 실제 작업을 맡아줄 재사용 가능한 함수를 만들어 두면 편리!
+    ```javascript
+    MYAPP.namespace('MYAPP.modules.module2');
+
+    /* 위 코드는 다음과 같은 결과를 반환
+    var MYAPP = {
+        modules: {
+            module2: {}
+        }
+    };
+    */
+    ```
+    - namespace() 함수를 구현해보자
+    ```javascript
+    var MYAPP = MYAPP || {};
+
+    MYAPP.namespace = function (ns_string) {
+        var parts = ns_string.split('.'),
+            parent = MYAPP,
+            i;
+        
+        // 처음에 중복되는 전역 객체명은 제거한다.
+        if (parts[0] === 'MYAPP') {
+            parts = parts.slice(1);
+        }
+        
+        for (i = 0; i < parts.length; i += 1) {
+            // 프로퍼티가 존재하지 않으면 생성한다.
+            if (typeof parent[parts[i]] === 'undefined') {
+                parent[parts[i]] = {};
+            }
+            parent = parent[parts[i]];
+        }
+        return parent;
+    };
+
+    // 반환 값을 지역 변수에 할당
+    var module2 = MYAPP.namespace('MYAPP.modules.module2');
+    module2 === MYAPP.modules.module2; // true
+
+    // 첫부분의 'MYAPP'을 생략하고도 쓸 수 있다.
+    MYAPP.namespace('modules.module51');
+    ```
+### 5.2 의존 관계 선언
+- 자바스크립트 라이브러리들은 대개 네임스페이스를 지정하여 모듈화되어 있기 때문에, 필요한 모듈만 골라서 쓸 수 있다.
+- 이 때 함수나 모듈 내 최상단에, 의존 관계에 있는 모듈을 선언하는 것이 좋다.
+- 즉 지역 변수를 만들어 원하는 모듈을 가리키도록 선언하는 것이다.
+    ```javascript
+    var myFunction = function () {
+        // 의존 관계에 있는 모듈
+        var event = Util.Event,
+            dom = Util.Dom;
+
+        // 이제 event와 dom이라는 변수를 사용한다.
+    };
+    ```
+- 장점?!
+    - 의존 관계과 명ㅅ히적으로 선언되어 있기 때문에 코드를 사용하는 사람이 페이지 내에 반드시 포함시켜야 하는 스크립트 파일이 무엇인지 알 수 있다.
+    - 함수의 첫 머리에 의존 관계가 선언되기 떄문에 의존 관계를 찾아내고 이해하기가 쉽다.
+    - dom과 같은 지역 변수는 Util같은 전역 변수보다 언제나 더 빠르다.
+    - 의존 관계 선언 패턴을 잘 지키면 함수 안에서 전역 객체 판별을 단 한번만 수행하고, 이 다음부터는 지역 변수를 사용하기 떄문에 훨씬 빠르다.
+    - 코드 압축 시 실제 코드량이 더 적어지고 사용자가 다운로드 하는 파일 크기도 더 작아진다.
+### 5.3 비공개 프로퍼티와 메서드
+- 자바스크립트에서 객체의 모든 멤버는 public, 공개되어있다!
+```javascript
+var myobj = {
+    myProp: 1,
+    getProp: function () {
+        return this.myprop;
+    }
+};
+console.log(myobj.myprop);
+console.log(myobje.getProp());
+
+function Gadget() {
+    this.name = 'iPod';
+    this.stretch = function () {
+        return 'iPad';
+    };
+}
+
+var toy = new Gadget();
+console.log(toy.name);
+console.log(toy.stretch());
+```
+#### 비공개(private) 멤버
+- 비공개 멤버에 대한 별도의 문법은 없지만 클로저를 사용해서 구현할 수 있다.
+- 생성자 함수 안에서 클로저를 만들면, 클로저 유효범위 안의 변수는 생성자 함수 외부에 노출되지 않지만 객체의 공개 메서드 안에서는 쓸 수 있다.
+- 즉 생성자에서 객체를 반환할 때 객체의 메서드를 정의하면, 이 메서드 안에서는 비공개 변수에 접근할 수 있는 것이다.
+```javascript
+function Gadget() {
+    // 비공개 멤버
+    var _name = 'iPod';
+    // 공개된 함수
+    this.getName = function () {
+        return name;
+    };
+}
+var toy = new Gadget();
+
+// name은 비공개이므로 undefined 출력
+console.log(toy.name);
+
+console.log(toy.getName()); // iPod
+```
+- 비공개를 유지할 데이터를 함수로 감싸기만 하면돼~!
+- 이 데이터들을 함수의 지역 변수로 만들면, 함수 외부에서는 접근할 수 없다.
+
+#### 특권(privilieged) 메서드
+- 비공개 멤버에 접근권한을 가진 공개 메서드를 가르킨다.
+- 위에 예제에서 getName() 메서드가 _name에 대해 특별한 접근권한을 가지고 있기 때문에 특권 메서드다.
+
+#### 비공개 멤버의 허점
+- 특권 메서드에서 비공개 변수의 값을 바로 반환할 경우 이 변수가 '객체'나 '배열'이라면 값이 아닌 참조가 반환되기 떄문에, 외부 코드에서 비공개 변수 값을 수정할 수 있다.
+    ```javascript
+    function Gadget() {
+        // 비공개 멤버
+        var _specs = {
+            screen_width: 320,
+            screen_height: 480,
+            color: 'pink'
+        };
+
+        // 공개 함수
+        this.getSpecs = function () {
+            return _specs;
+        };
+    }
+
+    var toy = new Gadget(),
+        specs = toy.getSpecs();
+    specs.color = 'black';
+    specs.price = 'free';
+
+    console.dir(toy.getSpecs());
+    ```
+    - _specs 는 비공개이지만 객체 또는 배열일 때 참조된다면 외부에서도 private한 _specs가 외부 사용자에 의해 변경될 수 있다.
+        - 객체를 복사하는 범용 함수를 사용하여 _specs 객체의 복사본을 만들어 사용
+#### 객체 리터럴과 비공개 멤버
+- 비공개 데이터를 함수로 감싸기만 하면돼
+- 객체 리터럴에서는 익명 즉시 실행 함수를 추가하여 클로저를 만든다.
+    ```javascript
+    var myobj; // 이 변수에 객체를 할당할 것이다.
+    (function () {
+        // 비공개 멤버
+        var _name = "my, oh my";
+
+        // 공개될 부분을 구현한다.
+        // var를 사용하지 않았다는데 주의하라.
+        myobj = {
+            // 특권 메서드
+            getName: function () {
+                return _name;
+            }
+        };
+    })();
+
+    myobj.getName(); // "my, oh my"
+    ```
+- 모듈 패턴의 기초가 되는 부분
+    ```javascript
+    var myobj = (function () {
+        // 비공개 멤버
+        var _name = "my, oh my";
+
+        // 공개될 부분을 구현한다.
+        return {
+            getName: function () {
+                return _name;
+            }
+        };
+    })();
+    myobj.getName();
+    ```
+#### 프로토타입과 비공개 멤버
+- 생성자를 사용하여 비공개 멤버를 만들 경우, 생성자를 호출하여 새로운 객체를 만들 떄마다 비공개 멤버가 매번 재생성된다는 단점.
+- 사실 생성자 내부에서 this에 멤버를 추가하면 항상 이런 문제가 발생한다.
+- 이러한 중복을 없애고 메모리를 절약하려면 공통 프로퍼티와 메서드를 생성자의 prototype 프로퍼티에 추가해햔다.
+- 동일한 생성자로 생성한 모든 인스턴스가 공통된 부분을 공유하기 된다.
+- 감춰진 비공개 멤버들도 모든 인스턴스가 함꼐 쓸 수 있다.
+- 이를 구현하기 위해 두 가지 패턴 필요
+    - 생성자 함수 내부에 비공개 멤버를 만든느 패턴
+    - 객체 리터럴로 비공개 멤버를 만드는 패턴
+        - prototype 프로퍼티도 결국 객체라서, 객체 리터럴로 생성할 수 있기 때문
+```javascript
+function Gadget() {
+    // 비공개 멤버
+    var _name = 'iPod';
+    // 공개 함수
+    this.getName = function () {
+        return _name;
+    };
+}
+
+Gadget.prototype = (function () {
+    // 비공개 멤버
+    var _browser = "Mobile Webkit";
+    
+    // 공개된 프로토타입 멤버
+    return {
+        getBrowser: function () {
+            return _browser;
+        }
+    }
+})();
+
+var toy = new Gadget();
+console.log(toy.getName()); // 객체 인스턴스의 특권 메서드 iPod
+console.log(toy.getBrowser()); // 프로토타입의 특권 메서드 Mobile Webkit
+```
+#### 비공개 함수를 공개 메서드로 노출시키는 방법
+- 노출 패턴(revelation pattern) : 비공개 메서드를 구현하면서 동시에 공개 메서드로도 노출하는 것.
+- 객체의 모든 기능이 객체가 수행하는 작업에 필수불가결한 것들이라서 최대한의 보호 필요
+    - 동시에 이 기능들의 유용성떄문에 공개적인 접근도 허용하고 싶은 경우에 사용
+- 노출 패턴의 유용한 경우
+    - 메서드가 공개되어 있다는 것은 결국 이 메서드가 위험에 노출되어 있다는 말과 같다.
+    - 공개 API 사용자가 어쩌면 본의 아니게 메서드를 수정할 수 있기 떄문
+    - ECMAScript 5에서는 객체를 고정시킬 수 있는 Object.freeze() 같은 메서드 지원
+##### 모듈 노출 패턴
+- 크리스천 헤일먼이 만들어냄
+```javascript
+var myarray;
+
+(function () {
+    var astr = '[object Array]',
+        toString = Object.prototype.toString;
+    
+    function isArray(a) {
+        return toString.call(a) === astr;
+    }
+
+    function indexOf(haystack, needle) {
+        var i = 0,
+            max = haystack.length;
+        for (; i < max; i += 1) {
+            if (haystack[i] === needle) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    myarray = {
+        isArray: isArray,
+        indexOf: indexOf,
+        inArray: indexOf
+    };
+
+})();
+
+myarray.isArray([1, 2]);
+myarray.isArray({0: 1});
+myarray.indexOf(["a", "b", "z"], "z");
+myarray.inArray(["a", "b", "z"], "z");
+```
+- 비공개 함수는 안전하게 보호
+```javascript
+myarray.indexOf = null;
+myarray.inArray(['a', 'b', 'z'], 'z');
+```
+### 5.4 모듈 패턴
+- 모듈 패턴은 늘어나는 코드를 구조화 하고 정리하는데 도움이 됨.
+- 모듈 패턴을 사용하면 개별적인 코들르 느슨하게 결합시킬 수 있어!
+- 소프트웨어 개발중에 끊임 없이 변하는 요구 사항에 따라 기능을 추가하거나 교체하거나 삭제하는 것도 자유롭게 할 수 있음.
+- 모듈 패턴은 다음의 패턴들을 조합해서 만든다
+    - 1. 네임스페이스 패턴
+    - 2. 즉시 실행 함수
+    - 3. 비공개 멤버와 특권 멤버
+    - 4. 의존 관계 선언
+    ```javascript
+    // 의존성 테스트 용도 객체 선언 (실제로는 모듈 구현부가 들어감.)
+    MYAPP.namespace('MYAPP.utilities.object');
+    MYAPP.namespace('MYAPP.utilities.lang');
+    
+    MYAPP.namespace('MYAPP.utilities.array'); // 1. 네임 스페이스 설정
+    
+    /*
+    2. 즉시 실행 함수를 사용해 비공개 유효범위를 만듦.
+    */
+    MYAPP.utilities.array = (function () {
+        // 4. 의존 관계 선언
+        var utilObj = MYAPP.utilities.object,
+            utilLang = MYAPP.utilities.lang;
+
+        // 3. 비공개 멤버
+        var array_string = '[object Array]',
+            toString = Object.prototype.toString;
+        var indexOf = function (haystack, needle) {
+            var i = 0, max = haystack.length;
+            for (; i < max ; i += 1) {
+                if (haystack[i] === needle) {
+                    return i;
+                }
+            }
+            return -1;
+        };
+
+        var isArray = function (arr) {
+            return toString.call(arr) === array_string;
+        };
+        // 3. 외부에서 접근할 공개 특권 멤버들을 반환 (공개 API만 노출)
+        return {
+            indexOf: indexOf,
+            inArray: indexOf,
+            isArray: isArray
+        };
+    })();
+    ```
+#### 모듈 노출 패턴
+- 모든 메서드를 비공개 상태로 유지하고, 최종적으로 공개 API를 갖출 때 공개할 메서드만 골라서 노출
+```javascript
+// 공개 API만 노출
+return {
+    indexOf: indexOf,
+    inArray: indexOf,
+    isArray: isArray
+};
+```
+#### 생성자를 생성하는 모듈
+- 생성자 함수를 사용해 객체를 만드는게 더 편할때 있어!
+- 모듈을 감싼 즉시 실행 함수가 마지막에 객체가 아니라 함수를 반환하게 하자!
+    ```javascript
+    // 생성자를 생성하는 모듈
+    MYAPP.namespace('MYAPP.utilities.array2'); // 1. 네임 스페이스 설정
+    
+    /*
+    2. 즉시 실행 함수를 사용해 비공개 유효범위를 만듦.
+    */
+    MYAPP.utilities.array2 = (function () {
+        // 4. 의존 관계 선언
+        // ...
+
+        // 3. 비공개 프로퍼티 선언 및 비공개 메서드 선언...
+        // ...
+
+        // 생성자 변수
+        var Constr;
+
+        // 공개 API - 생성자 함수
+        Constr = function (o) {
+            this.elements = this.toArray(o);
+        };
+        // 공개 API - 프로토타입
+        Constr.prototype = {
+            constructor: MYAPP.utilities.array2,
+            version: '2.0',
+            toArray: function (obj) {
+                for (var i = 0, a = [], len = obj.length ; i < len ; i += 1) {
+                    a[i] = obj[i];
+                }
+                return a;
+            }
+        };
+
+        return Constr;
+    })();
+    // 샘플 htmlCollection 가져오기
+    var htmlCollections = document.querySelectorAll('.menu-list li');
+    
+    // 생성자 함수 사용
+    var arr = new MYAPP.utilities.array2(htmlCollections);
+    arr.toArray(htmlCollections);
+    ```
+#### 모듈에 전역 변수 가져오기
+- 모듈을 감싼 즉시 실행 함수에 인자를 전달하는 형태
+- 보통 전역 변수에 대한 참조 또는 전역 객체 자체를 전달
+- 전역 변수를 전달하면 즉시 실행 함수 내에서 지역 변수로 사용할 수 있기 때문에 탐색 작업이 좀 더 빨라짐.
+```javascript
+MYAPP.utilites.module = (function (app, global) {
+    // 전역 객체에 대한 참조
+    // 전역 애플리케이션 네임스페이스 객체 대한 참조가 지역 변수화 된다.
+})(MYAPP, this);
+```
+### 5.5 샌드박스 패턴
+- 샌드박스 패턴은 네임스페이스의 다음과 같은 단점을 해결
+    - 애플리케이션 전역 객체가 단 하나의 전역 변수에 의존
+    - 네임스페이스 페턴으로는 동일한 애플리케이션이나 라이브러리의 두 가지 버전을 한 페이지에서 실행시키는 것이 불가능
+    - NYAPP.utilites.array와 같이 점으로 연결된 긴 이름을 써야하고 런타임에는 탐색 작업을 거쳐야 한다.
+- 샌드박스 패턴은 어떤 모듈이 다른 모듈과 그 모듈의 샌드박스에 영향을 미치지 않고 동작할 수 있는 환경을 제공한다.
+#### 전역 생성자
+- 네임 스페이스 패턴은 전역 객체가 하나다.
+- 샌드박스 패턴의 유일한 전역은 생성자다.
+    - Sandbox() 생성자를 통해 객체들을 생성
+    - 이 생성자에 콜백함수를 전달해 해당 코드를 샌드박스 내부 환경으로 격리
+    ```javascript
+    new Sandbox(function (box) {
+        /// 여기에 코드가 들어감...
+    });
+    ```
+    - box객체는 네임스페이스 패턴에서의 MYAPP과 같은 것.
+    - 코드가 동작하는데 필요한 모든 라이브러리 기능들이 여기에 들어감.
+    - 여기에 두가지를 추가해보자
+        - new를 강제하는 패턴을 활용하여 객체를 생성할때 new를 쓰지 않아도 되게 만듦
+        - Sandbox() 생성자가 선택자인 인자를 하나 이상 받을 수 있게 한다. 이 인자들은 객체를 생성하는데 필요한 모듈의 이름을 지정한다.
+        - 코드의 모듈화를 지향하고 있으므로 Sandbox()가 제공하는 기능 대부분이 실제로는 모듈안에 담겨지게 될 것.
+        ```javascript
+        // new를 쓰지 않고, 'ajax', 'event'를 사용하는 모듈 객체
+        Sandbox(['ajax', 'event'], function (box) {
+            console.log(box);
+        });
+
+        // 모듈 이름을 개별적인 인자로 전달
+        Sandbox('ajax', 'dom', function (box) {
+            console.log(box)
+        });
+
+        // 쓸수 있는 모듈을 모두 사용할때 - '*'와일드 카드 사용
+        Sandbox('*', function (box) {
+            //...
+        });
+        // 쓸수 있는 모듈을 모두 사용할때 - 쓸수있는 모듈명 누락
+        Sandbox(function (box) {
+            //...
+        });
+
+        // Sandbox를 중첩하여 사용하여도 간섭 현상 일어나지 않아!
+        Sandbox('dom', 'event', function (box) {
+            Sandbox('ajax', function (box) {
+                // 바깥쪽 box와 안의 box는 다르다!
+            });
+        });
+        ```
+#### 모듈 추가하기
+```javascript
+Sandbox.modules = {};
+
+Sandbox.modules.dom = function (box) {
+    box.getElement = function () {};
+    box.getStyle = function () {};
+    box.foo = "bar";
+};
+
+Sandbox.modules.event = function () {
+    // 필요에 따라 다음과 같이 Sandbox 프로토타입에 접근할 수 있다.
+    // box.constructor.prototype.m = 'mmm';
+    box.attachEvent = function () {};
+    box.detachEvent = function () {};
+};
+
+Sandbox.module.ajax = function (box) {
+    box.makeRequest = function () {};
+    box.getResponse = function () {};
+};
+```
+#### 생성자 구현
+```javascript
+function Sandbox() {
+    var args = Array.prototype.slice.call(arguments), // arguments를 배열로 바꿈.
+        callbakc = args.pop(), // 마지막 인자는 콜백 함수
+        // 모듈은 개별로 전달뒬 수도있고 개별 인자로 전달될 수 있음.
+        modules = (args[0] && typeof args[0] === 'string') ? args : args[0],
+        i;
+    
+    // 함수가 생성자로 호출되도록 보장
+    if (!(this instanceof Sandbox)) {
+        return new Sandbox(modules, callback);
+    }
+
+    // this에 필요한 프로퍼티들을 추가
+    this.a = 1;
+    this.b = 2;
+
+    // 코어 'this' 객체에 모듈을 추가
+    // 모듈이 없거나 '*'이면 사용 가능한 모든 모듈을 사용한다는 의미
+    if (!modules || modules === '*' || modules[0] === '*') {
+        modules = [];
+        for (i in Sandbox.modules) {
+            if (Sandbox.modules.hasOwnProperty(i)) {
+                modules.push(i);
+            }
+        }
+    }
+
+    // 필요한 모듈들을 초기화
+    for (i = 0; i < modules.length; i += 1) {
+        Sandbox.modules[moduels[i]](this);
+    }
+
+    callbakc(this);
+}
+
+Sandbox.prototype = {
+    name: 'My Application',
+    version: '1.0',
+    getName: function () {
+        return this.name;
+    }
+};
+```
+### 5.6 스태틱 멤버
+#### 공개 스태틱 멤버
+#### 비공개 스태틱 멤버
+
+### 5.7 객체 상수
+
+### 5.8 체이닝 패턴
+#### 체이닝 패턴의 장단점
+
+### 5.9 method() 메서드

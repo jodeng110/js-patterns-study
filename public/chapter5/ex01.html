@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Chapter 5 - 객체 생성 패턴</title>
+</head>
+
+<body>
+  <ul class="menu-list">
+    <li>짜장면</li>
+    <li>탕수육</li>
+    <li>짬뽕</li>
+    <li>깐풍기</li>
+  </ul>
+  <script>
+    // 네임 스페이스 패턴
+    var MYAPP = MYAPP || {};
+
+    MYAPP.namespace = function (ns_string) {
+      var parts = ns_string.split('.'),
+        parent = MYAPP,
+        i;
+
+      // 처음에 중복되는 전역 객체명은 제거한다.
+      if (parts[0] === 'MYAPP') {
+        parts = parts.slice(1);
+      }
+
+      for (i = 0; i < parts.length; i += 1) {
+        // 프로퍼티가 존재하지 않으면 생성한다.
+        if (typeof parent[parts[i]] === 'undefined') {
+          parent[parts[i]] = {};
+        }
+        parent = parent[parts[i]];
+      }
+      return parent;
+    };
+
+    // 반환 값을 지역 변수에 할당
+    var module2 = MYAPP.namespace('MYAPP.modules.module2');
+    module2 === MYAPP.modules.module2; // true
+
+    // 첫부분의 'MYAPP'을 생략하고도 쓸 수 있다.
+    MYAPP.namespace('modules.module51');
+    console.log(MYAPP);
+
+    // Private 멤버
+    function Gadget() {
+      // 비공개 멤버
+      var _name = 'iPod';
+      // 공개된 함수
+      this.getName = function () {
+        return _name;
+      };
+    }
+    var toy = new Gadget();
+
+    // name은 비공개이므로 undefined 출력
+    console.log(toy.name);
+
+    console.log(toy.getName()); // iPod
+
+    // private 멤버가 객체 또는 배열일 때 문제 발생
+    function Gadget2() {
+      // 비공개 멤버
+      var _specs = {
+        screen_width: 320,
+        screen_height: 480,
+        color: 'pink'
+      };
+
+      // 공개 함수
+      this.getSpecs = function () {
+        return _specs;
+      };
+    }
+
+    var toy = new Gadget2(),
+      specs = toy.getSpecs();
+    specs.color = 'black';
+    specs.price = 'free';
+
+    console.dir(toy.getSpecs());
+
+    // 객체 리터럴과 비공개 멤버
+    var myobj; // 이 변수에 객체를 할당할 것이다.
+    (function () {
+      // 비공개 멤버
+      var _name = "my, oh my";
+
+      // 공개될 부분을 구현한다.
+      // var를 사용하지 않았다는데 주의하라.
+      myobj = {
+        // 특권 메서드
+        getName: function () {
+          return _name;
+        }
+      };
+    })();
+
+    console.log(myobj.getName()); // "my, oh my"
+
+    // 모듈 패턴의 기초가 되는 부분
+    var myobj2 = (function () {
+      // 비공개 멤버
+      var _name = "my, oh my2";
+
+      // 공개될 부분을 구현한다.
+      return {
+        getName: function () {
+          return _name;
+        }
+      };
+    })();
+
+    console.log(myobj2.getName());
+
+    // 프로토타입과 비공개 멤버
+    function Gadget3() {
+      // 비공개 멤버
+      var _name = 'iPod';
+      // 공개 함수
+      this.getName = function () {
+        return _name;
+      };
+    }
+
+    Gadget3.prototype = (function () {
+      // 비공개 멤버
+      var _browser = "Mobile Webkit";
+
+      // 공개된 프로토타입 멤버
+      return {
+        getBrowser: function () {
+          return _browser;
+        }
+      }
+    })();
+
+    var toy = new Gadget3();
+    console.log(toy.getName()); // iPod
+    console.log(toy.getBrowser()); // Mobile Webkit
+
+    // 모듈 노출 패턴
+    var myarray;
+
+    (function () {
+        var astr = '[object Array]',
+            toString = Object.prototype.toString;
+        
+        function isArray(a) {
+            return toString.call(a) === astr;
+        }
+
+        function indexOf(haystack, needle) {
+            var i = 0,
+                max = haystack.length;
+            for (; i < max; i += 1) {
+                if (haystack[i] === needle) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        myarray = {
+            isArray: isArray,
+            indexOf: indexOf,
+            inArray: indexOf
+        };
+
+    })();
+
+    console.log(myarray.isArray([1, 2])); // true
+    console.log(myarray.isArray({0: 1})); // false
+    console.log(myarray.indexOf(["a", "b", "z"], "z")); // 2
+    console.log(myarray.inArray(["a", "b", "z"], "z")); // 2
+    
+    // 비공개 메서드 확실하게 보호됨!
+    myarray.indexOf = null;
+    console.log(myarray.inArray([1, 2, 3, 4, 5], 5)); // 4
+
+    // 모듈 패턴
+    // 의존성 테스트 용도 객체 선언 (실제로는 모듈 구현부가 들어감.)
+    MYAPP.namespace('MYAPP.utilities.object');
+    MYAPP.namespace('MYAPP.utilities.lang');
+
+    MYAPP.namespace('MYAPP.utilities.array'); // 1. 네임 스페이스 설정
+    
+    /*
+    2. 즉시 실행 함수를 사용해 비공개 유효범위를 만듦.
+    */
+    MYAPP.utilities.array = (function () {
+        // 4. 의존 관계 선언
+        var utilObj = MYAPP.utilities.object,
+            utilLang = MYAPP.utilities.lang;
+
+        // 3. 비공개 멤버
+        var array_string = '[object Array]',
+            toString = Object.prototype.toString;
+        var indexOf = function (haystack, needle) {
+            var i = 0, max = haystack.length;
+            for (; i < max ; i += 1) {
+                if (haystack[i] === needle) {
+                    return i;
+                }
+            }
+            return -1;
+        };
+
+        var isArray = function (arr) {
+            return toString.call(arr) === array_string;
+        };
+        // 3. 외부에서 접근할 공개 특권 멤버들을 반환
+        return {
+            indexOf: indexOf,
+            inArray: indexOf,
+            isArray: isArray
+        };
+    })();
+
+    // 생성자를 생성하는 모듈
+    MYAPP.namespace('MYAPP.utilities.array2'); // 1. 네임 스페이스 설정
+    
+    /*
+    2. 즉시 실행 함수를 사용해 비공개 유효범위를 만듦.
+    */
+    MYAPP.utilities.array2 = (function () {
+        // 4. 의존 관계 선언
+        // ...
+
+        // 3. 비공개 프로퍼티 선언 및 비공개 메서드 선언...
+        // ...
+
+        // 생성자 변수
+        var Constr;
+
+        // 공개 API - 생성자 함수
+        Constr = function (o) {
+            this.elements = this.toArray(o);
+        };
+        // 공개 API - 프로토타입
+        Constr.prototype = {
+            constructor: MYAPP.utilities.array2,
+            version: '2.0',
+            toArray: function (obj) {
+                for (var i = 0, a = [], len = obj.length ; i < len ; i += 1) {
+                    a[i] = obj[i];
+                }
+                return a;
+            }
+        };
+
+        return Constr;
+    })();
+
+     console.log(MYAPP);
+    
+    var htmlCollections = document.querySelectorAll('.menu-list li');
+    var arr = new MYAPP.utilities.array2(htmlCollections);
+    console.log(arr.toArray(htmlCollections));
+  </script>
+</body>
+
+</html>
