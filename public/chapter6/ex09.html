@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>6.12 메서드 빌려쓰기</title>
+</head>
+
+<body>
+  <script>
+    /* call() 사용해서 Array.prototype.slice 메서드 빌려쓰기 */
+    function f() {
+      console.log(arguments); // Arguments Array-Like Object
+
+      var args = [].slice.call(arguments);
+      return args;
+    }
+
+    console.log(f(1, 2, 3, 4, 5, 6));
+
+    /* 빌려쓰기와 바인딩 */
+    var one = {
+      name: "object",
+      say: function (greet) {
+        return `${greet}, ${this.name}`;
+      }
+    };
+
+    console.log(one.say('Welcome')); // Welcome, object
+
+    var two = {
+      name: 'Jodeng'
+    }
+
+    console.log(one.say.call(two, 'Hello')); // Hello, Jodeng
+
+    /* 예기치 못한 결과가 나왔을 때! */
+    // 함수를 변수에 할당하면 함수 안의 this는 전역 객체를 가리키게 된다.
+    var say = one.say;
+    console.log(say('hoho')); // hoho,
+
+    // 콜백 함수로 전달할 경우
+    var yetanother = {
+      name: 'Yet another Object',
+      method: function (callback) {
+        return callback('Hola');
+      }
+    };
+    console.log(yetanother.method(one.say)); // Hola,
+
+    function bind(o, m) {
+      return function () {
+        return m.apply(o, [].slice.call(arguments));
+      }
+    }
+
+    var twosay = yetanother.method(bind(yetanother, one.say));
+    console.log(twosay);
+
+    var taz = bind({ name: 'Taz' }, one.say);
+    console.log(taz('Hi')); // Hi, Taz
+
+    /*
+    function.prototype.bind() 활용
+    */
+    if (typeof Function.prototype.bind === 'undefined') {
+      Function.prototype.bind = function (thisArg) {
+        var fn = this,
+          slice = Array.prototype.slice,
+          arges = slice.call(arguments, 1);
+
+        return function () {
+          return fn.apply(thisArg, args.concat(slice.call(arguments)));
+        };
+      };
+    }
+
+    var twosay2 = one.say.bind(two);
+    console.log(twosay2('봉쥬르!'));
+
+    var twosay3 = one.say.bind(two, '사와디캅');
+    console.log(twosay3());
+  </script>
+</body>
+
+</html>

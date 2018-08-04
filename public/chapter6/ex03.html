@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>6.5 클래스 방식의 상속 패턴 #3 - 생성자 빌려 쓰고 프로토타입 지정해주기</title>
+</head>
+
+<body>
+  <script>
+    // 부모 생성자
+    function Parent(name) {
+      this.name = name || 'Adam';
+    }
+
+    // 프로토타입에 기능 추가
+    Parent.prototype.say = function () {
+      return this.name;
+    };
+    function Child(a, b, c, d) {
+      Parent.apply(this, arguments);
+    }
+    Child.prototype = new Parent();
+
+    var kid = new Child('BeomGeon');
+    console.log(kid, kid.name);
+    console.log(kid.say()); // BeomGeon 잘 나온다!
+    delete kid.name;
+    console.log(kid, kid.name);
+  </script>
+</body>
+
+</html>

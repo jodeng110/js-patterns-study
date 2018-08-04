@@ -2581,3 +2581,507 @@ var p = new Person('Cho');
 p.getName(); // Cho
 p.setName('Jodeng').getName(); // Jodeng
 ```
+
+## Chapter 7 - 코드 재사용 패턴
+- 코드 재사용 접근 시 Gof(Gang of Four)의 충고를 가슴에 새겨두자.
+    - '클래스 상속보다 객체 함성을 우선시 하라'
+### 6.1 클래스(classical) 방식 vs. 새로운 방식의 상속(inheritance) 패턴
+- 자바스크립트는 클래스라는 개념이 없고 함수를 선언해서 '클래스 처럼(new)' 사용하는거지!
+- 자바스크립트의 객체는 단순히 키-값의 쌍들일 뿐이며, 언제든지 생성하고 변경할 수 있다.
+### 6.2 클래스 방식의 상속을 사용할 경우 예상되는 산출물
+- 자바스크립트에서는 '클래스'라고 하지말고 '생성자 함수'라는 말이 더 맞겠다.
+- Parent() 생성자와 Child() 생성자를 정의한 예제
+    ```javascript
+    // 부모 생성자
+    function Parent(name) {
+        this.name = name || 'Adam';
+    }
+    
+    // 생성자의 프로토타입에 기능을 추가
+    Parent.prototype.say = function () {
+        return `Hello ${this.name}`;
+    };
+
+
+    // 아무 내용이 없는 자식 생성자
+    function Child(name) {
+
+    }
+
+    // 여기서 상속의 마법이 일어난다.
+    inherit(Child, Parent); // inherit함수는 직접 구현해야해!
+    ```
+### 6.3 클래스 방식의 상속 패턴 #1 - 기본 패턴
+- 샘플코드) chapter6/ex01.html 참고
+- Parent() 생성자를 사용해 객체를 생성한 다음, 객체를 Child()의 프로토타입에 할당한다.
+- 재사용 가능한 inherit()함수의 첫번째 구현
+    ```javascript
+    function inherit(C, P) {
+        C.prototype = new P();
+    }
+    ```
+    - prototype 프로퍼티가 함수가 아니라 객체를 가리키게 하는 것이 중요!
+    - 프로토타입이 부모 생성자 함수 자체가 아니라 부모 생성자 함수로 생성한 객체 인스턴스를 가리켜야 한다.
+    - new 연산자 사용 중요
+    ```javascript
+    var kid = new Child();
+    kid.say(); // "Adam"
+    ```
+- 참고)
+    - 함수 생성시 일어나는 일
+        - function Alert () {//...} // 함수가 생성되면
+        - 1. 즉시 prototype이라는 이름의 키게 오브젝트 생성
+            - Alert.prototype = {};
+        - 2. constructor가 세팅
+            - Alert.prototype.constructor = Alert;
+    - new 연산자 이용시 일어나는 일
+        - var a = new Alert('test');
+        - 1. a = {}; 
+        - 2. a.__proto = Alert.prototype;
+        - 3. temp = Alert.apply(a, arguments);
+        - if (typeof temp == 'object' || typeof temp == 'function') a = temp;
+#### 프로토타입 체인 추적
+- 이 패턴을 사용하면 부모 객체의 프로토타입에 추가된 프로퍼티와 메서드들과 함꼐, 부모 객체 자신의 프로퍼티(this에 추가된 인스턴스 프로퍼티)도 모두 물려받게 된다.
+- __proto__라는 숨겨진 링크를 통해 Parent.prototype에 접근 가능.
+#### 패턴 #1의 단점
+- 부모 객체의 this에 추가된 객체 자신의 프로퍼티와 프로토타입 프로퍼티를 모두 물려받게 된다는 점!
+    ```javascript
+    var s = new Child('Seth');
+    s.say(); // Adam 으잉? 이상하지 않아?
+    ```
+- 자식 생성자에 인자를 넘겨도 부모 생성자에게 전달하지 못한다!
+### 6.4 클래스 방식의 상속 패턴 #2 - 생성자 빌려 쓰기
+- 샘플코드) chapter6/ex02-01.html 참고
+- 부모 생성자 함수의 this에 자식 객체를 바인딩한 다음, 자식 생성자가 받은 인자들을 모두 넘겨준다.
+    ```javascript
+    function Child(a, b, c, d) {
+        Parent.apply(this, arguments);
+    }
+    ```
+    - 부모 생성자 함수 내부의 this에 추가된 프로퍼티만 물려받게 된다.
+    - 푸로토타입에 추가된 멤버는 상속도지 않는다.
+- 생성자 빌려쓰기 패턴을 사용하면, 자식 객체는 상속된 멤버의 복사본을 받게 된다.
+    ```javascript
+    // 부모 생성자
+    function Article() {
+        this.tags = ['js', 'css'];
+    }
+    var article = new Article();
+
+    // 클래스 방식의 패턴 #1을 사용해 article 객체를 상속하는 blog 객체를 생성한다.
+    function BlogPost() {}
+    BlogPost.prototype = article;
+    var blog = new BlogPost();
+    
+    // 생성자 빌려쓰기 패턴을 사용해 article을 상속하는 page객체를 생성
+    function StaticPage() {
+        Article.call(this);
+    }
+    var page = new StaticPage();
+
+    console.log(article.hasOwnProperty('tags'));
+    console.log(blog.hasOwnProperty('tags'));
+    console.log(page.hasOwnProperty('tags'));
+    ```
+#### 프로토타입 체인
+- 샘플코드) chapter6/ex02-02.html 참고
+```javascript
+// 부모 생성자
+function Parent(name) {
+    this.name = name || 'Adam';
+}
+
+// 프로토타입에 기능 추가
+Parent.prototype.say = function () {
+    return this.name;
+};
+
+// 자식 생성자
+function Child(name) {
+    Parent.apply(this, arguments);
+}
+
+var kid = new Child('Jodeng');
+kid.name;
+typeof kid.say;
+```
+- 여기서의 상속은 부모가 가진 자신만의 프로퍼티를 자식의 프로퍼티로 복사해주는 일회성 동작.
+- __proto__라는 링크는 유지되지 않는다.
+#### 생성자 빌려쓰기를 적용한 다중 상속
+- 샘플코드) chapter6/ex02-03.html 참고
+- 생성자를 하나 이상 빌려쓰는 다중 상속을 구현할 수 있다.
+```javascript
+function Cat() {
+    this.legs = 4;
+    this.say = function () {
+        return "meaowww";
+    };
+}
+
+function Bird() {
+    this.wings = 2;
+    this.fly = true;
+}
+
+function CatWings() {
+    Cat.apply(this);
+    Bird.apply(this);
+}
+var jane = new CatWings();
+console.dir(jane);
+```
+#### 생성자 빌려쓰기 패턴의 장단점
+- 단점) prototype이 전혀 상속되지 않는다.
+    - 재사용되는 메서드와 프로퍼티는 인스턴스별로 재생성되지 않도록 프로토타입에 추가해야되기 때문에
+- 장점) 부모 생성자 자신의 멤버에 대한 복사본을 가져올수 있다.
+### 6.5 클래스 방식의 상속 패턴 #3 - 생성자 빌려쓰고 프로토타입 지정해주기
+- 샘플코드) chapter6/ex03.html 참고
+- 부모 생성자를 빌려온 후, 자식의 프로토타입이 부모 생성자를 통해 생성된 인스턴스로 가리키도록 지정.
+    ```javascript
+    function Child(a, b, c, d) {
+        Parent.apply(this, arguments);
+    }
+    Child.prototype = new Parent();
+    ```
+    - 장점) 부모가 가진 모든 것을 상속하는 동시에, 부모의 프로퍼티를 덮어쓸 위험 없이 자신만의 프로퍼티를 마음놓고 변경할 수 있다.
+    - 단점) 부모 생성자를 비효율적으로 두번 호출
+### 6.6 클래스 방식의 상속 패턴 #4 - 프로토타입 공유
+- 샘플코드) chapter6/ex04.html 참고
+- #3의 방식은 부모 생성자를 두번 호출 => 비효율적
+- 이번 패턴은 프로토타입을 공유하고 부모 생성자를 한번도 호출하지 않는다.
+- 원칙적으로 재사용할 멤버는 this가 아니라 프로토타입에 추가되어야 한다.
+- 상속되어야 하는 모든 것들은 프로토타입 안에 존재해야 한다.
+    - 부모의 프로토타입을 똑같이 자식의 프로토타입으로 지정하면된다.
+    ```javascript
+    function inherit(C, P) {
+        C.prototype = P.prototype;
+    }
+    ```
+    장점) 모든 객체가 실제로 동일한 프로토타입을 공유하게 되므로, 프로토타입 체인 검색은 짧고 간단해진다.
+    단점) 상속 체인의 하단 어딘가에 있는 자식이나 손자가 프로토타입을 수정할 경우, 모든 부모와 손자뻘의 객체에 영향을 미침.
+### 6.7 클래스 방식의 상속 패터 #5 - 임시 생성자
+- 샘플코드) chapter6/ex05.html 참고
+- 프로토타입 체인의 이점은 유지하면서, 동일한 프로토타입을 공유할때의 문제를 해결하기 위해 부모와 자식의 프로토타입 사이에 직접적인 링크를 끊는다.
+```javascript
+function inherit(C, P) {
+    var F = function () {};
+    F.prototype = P.prototype;
+    C.prototype = new F();
+}
+```
+#### 상위 클래스 저장
+- 부모 원본에 대한 참조 추가
+```javascript
+function inherit(C, P) {
+    var F = function () {};
+    F.prototype = P.prototype;
+    C.prototype = new F();
+    C.superclass = P.prototype;
+}
+```
+#### 생성자 포인터 재설정
+- 생성자 함수를 가리키는 포인터를 재설정
+```javascript
+function inherit(C, P) {
+    var F = function () {};
+    F.prototype = P.prototype;
+    C.prototype = new F();
+    C.superclass = P.prototype;
+    C.prototype.constructor = C;
+}
+```
+##### 최적화 하기
+```javascript
+var inherit = (function () {
+    var F = function () {};
+    return function (C, P) {
+        F.prototype = P.prototype;
+        C.prototype = new F();
+        c.superclass = P.prototype;
+        C.prototype.constructor = C;
+    }
+})();
+```
+### 6.8 Klass
+- 많은 자바스크립트 라이브러리가 새로운 문법 설탕을 도입하여 클래스를 흉내낸다.
+    - 클래스의 생성자라고 할 수 있는 메서드에 대한 명명규칙이 존재
+    - 이 메서드들은 자동으로 호출되며 initialize, _init등의 이름을 가짐.
+    - 클래스는 다른 클래스로부터 상속
+    - 자식 클래스 내부에서 부모 클래스(상위 클래스)에 접근할 수 있는 경로가 존재
+- 클래스를 모방한 구현 예제
+    - 샘플코드) chapter6/klass.html 참고
+### 6.9 프로토타입을 활용한 상속
+- 샘플코드) chapter6/ex06.html 참고
+- 클래스를 사용하지 않는 '새로운' 방식
+- 객체가 객체를 상속받는다.
+- 재사용하려는 객체가 하나 있고, 또 다른 객체를 만들어 이 첫번째 기능을 가져온다고 생각해라.
+    ```javascript
+    function object(o) {
+        function F() {};
+        F.prototype = o;
+        return new F();
+    }
+    // 상속해줄 객체
+    var parent = {
+        name: "Papa"
+    };
+
+    // 새로운 객체
+    var child = object(parent);
+
+    // 테스트 해보자
+    console.log(child.name); // PaPa
+    ```
+#### 논의
+```javascript
+function Person(name) {
+    this.name = name ||'Adam';
+}
+Person.prototype.getName = function () {
+    return this.name;
+};
+
+// Person 인스턴스 생성
+var papa = new Person();
+
+// 이 인스턴스를 상속한다.
+var kid = object(papa);
+
+// 부모 자기 자신의 프로퍼티와 프로토타입의 프로퍼티가 모두 상속
+console.log(kid, kid.getName(), kid.name); // "Adam", "Adam"
+```
+- 생성자 함수의 프로토타입 객체만 상속 받을 수있도록 변형
+```javascript
+function Person(name) {
+    this.name = name ||'Adam';
+}
+Person.prototype.getName = function () {
+    return this.name;
+};
+
+// 프로토타입 객체만 상속
+var kid = object(Person.prototype);
+
+typeof kid.getName; // 'function' : 프로토타입 객체를 상속받아 getName 메서드 존재
+typeof kid.name; // 'undefined' : 부모의 프로퍼티를 받지 않음.
+```
+#### ECAMScript 5 추가사항
+- Object.create() 제공
+```javascript
+// 이 부분이
+function object(o) {
+    function F () {}
+    F.prototype = o;
+    return new F();
+}
+
+// Object.create()에 구현되어져있다!
+var child = Object.create(parent);
+```
+- Object.create()는 상속과 정의가 가능
+    ```javascript
+    var child = Object.create(parent, {
+        age: {value: 2}
+    });
+
+    child.hasOwnProperty('age'); // true
+    ```
+### 6.10 프로퍼티 복사를 통한 상속 패턴
+- 샘플코드) chapter6/ex07.html 참고
+- 프로퍼티 복사를 통한 상속 패턴은 객체가 다른 객체의 기능을 단순히 복사를 통해 가져온다.
+```javascript
+function extend(parent, child) {
+    var i;
+    child = child || {};
+    for (i in parent) {
+        if (parent.hasOwnProperty(i)) {
+            child[i] = parent[i];
+        }
+    }
+}
+var dad = {name: 'Adam'};
+var kid = extend(dad);
+kid.name; // "Adam"
+```
+- 자바스크립트 객체는 참조만 전달되기 떄문에 얕은 복사를 통해 상속을 실행한 경우, 자식 쪽에서 객체 타입인 프로퍼티 값을 수정하면 부모의 프로퍼티도 수정된다.
+    ```javascript
+    var dad = {
+        counts: [1, 2, 3],
+        reads: {paper: true}
+    };
+    var kid = extend(dad);
+    kid.counts.push(4);
+    dad.counts.toString(); // 1, 2, 3, 4
+    dad.reads === kid.reads; // true
+    ```
+- extend() 함수가 깊은 복살르 수행할 수 있도록 수정
+    ```javascript
+    function extendDeep(parent, child) {
+        var i,
+            toStr = Object.prototype.toString,
+            astr = '[object Array]';
+
+        child = child || {};
+
+        for (i in parent) {
+            if (parent.hasOwnProperty(i)) {
+                if (typeof parent[i] === 'object') {
+                    child[i] = (toStr.call(parent[i]) === astr) ? [] : {};
+                    extendDeep(parent[i], child[i]);
+                } else {
+                    child[i] = parent[i];
+                }
+            }
+        }
+        return child;
+    }
+
+    var dad = {
+        counts: [1, 2, 3],
+        reads: {paper: true}
+    };
+    var kid = extendDeep(dad);
+    kid.counts.push(4);
+    kid.counts.push(5);
+    kid.counts.toString(); // 1, 2, 3, 4, 5
+    dad.counts.toString(); // 1, 2, 3
+
+    dad.reads === kid.reads; // false
+    kid.reads.paper = false;
+    kid.reads.web = true;
+    dad.reads.paper; // true
+    ```
+### 6.11 믹스-인
+- 샘플코드) chapter6/ex08.html 참고
+- 하나의 객체를 복사하는 게 아니라 여러 객체에서 복사해온 것을 한 객체 안에 섞어 넣을 수 있음.
+- 구현 방법 : 함수에 인자로 전달된 객체들을 받아 루프를 돌면서 모든 프로퍼티를 복사
+    ```javascript
+    function mix() {
+        var arg, prop, child = {}, len = arguments.length;
+        for (arg = 0; arg < len; arg += 1) {
+            for (prop in arguments[arg]) {
+                if (arguments[arg].hasOwnProperty(prop)) {
+                    child[prop] = arguments[arg][prop];
+                }
+            }
+        }
+        return child;
+    }
+
+    var cake = mix(
+        {eggs: 2, large: true},
+        {butter: 1, salted: true},
+        {flour: '3 cups'},
+        {sugar: 'sure!'}
+    );
+
+    console.log(cake);
+    ```
+    - mix()를 구현하지 않아도 ES6에 Object.assign()을 사용하면 똑같은 결과값을 기대할 수 있다.
+    ```javascript
+    var cake2 = Object.assign({},
+        {eggs: 2, large: true},
+        {butter: 1, salted: true},
+        {flour: '3 cups'},
+        {sugar: 'sure!'}
+    );
+    - Object.assign(target, ...sources);
+        - 첫번째 매개변수는 타겟이 된다.
+    ```
+### 6.12 메서드 빌려쓰기
+- 샘플코드) chapter6/ex09.html 참고
+- 어떤 객체에서 메서드 한두개만 마음에 드는 경우가 있다.
+    - 이 메서드들을 재사용하고 싶지만 이 객체와 부모-자식 관계 까지 만들고 싶지는 않다.
+    - 쓸 일이 없는 모든 메서드를 상속받지 않고 원한느 메서드만 골라서 사용하고 싶다면 메서드 빌려쓰기 패턴을 사용하면 된다.
+    - call(), apply() 활용!
+##### 메서드 빌려쓰기 패턴 - call(), apply()
+- 빌려쓰려는 메서드의 this에 매개변수로 전달한 객체가 바인딩된다.
+    - 매개변수로 전달한 객체가 잠시 동안 매서드의 주인(this)가 되어 주인 객체처럼 행세하게 되는 것.
+- call()은 호출할 함수에 전달할 매개변수를 별개의 인자들로 받음
+    - ex) notmyobj.doStuff.call(myobj, param1, p2, p3);
+- apply()는 호출할 함수에 전달할 매개변수를 배열로 받음
+    - ex) notmyobj.doStuff.apply(myobj, [param1, p2, p3]);
+#### 예제: 배열 메서드 빌려쓰기
+- 함수 호출시 들어오는 매개변수들(aguments)는 Arguments라는 Array-Like Object이다.
+- 이를 Array.prototype.slice 메서드를 잠시 빌려 써보자.
+```javascript
+function f() {
+    var args = [].slice.call(arguments);
+    return args;
+}
+
+f(1, 2, 3, 4 , 5, 6);
+```
+#### 빌려쓰기와 바인딩
+- call()이나 apply()를 사용하거나 단순한 할당을 통해 메서드를 빌려오게 되면, 빌려온 메서드 안에서 this가 가리키는 객체는 호출식에 따라 정해지게 된다.
+- this값을 고정시키거나, 특정 객체에 바인딩 되도록 처음부터 정해놓은 것.
+    ```javascript
+    var one = {
+        name: "object",
+        say: function (greet) {
+            return `${greet}, ${this.name}`;
+        }
+    };
+
+    one.say('Welcome'); // Welcome, object
+    ```
+    - 또다른 객체 two는 say()메서드를 갖고 있지 않지만 one에서 빌려올 수 있다.
+    ```javascript
+    var two = {
+        name: 'Jodeng'
+    }
+
+    one.say.call(two, 'Hello'); // Hello, Jodeng
+    ```
+    - 그런데 이 함수 포인터가 전역 객체를 가리키게 될 경우에는 어떻게 될까?
+    ```javascript
+    // 함수를 변수에 할당하면 함수 안의 this는 전역 객체를 가리키게 된다.
+    var say = one.say;
+    say('hoho'); // hoho, undefiend
+
+    // 콜백 함수로 전달할 경우
+    var yetanother = {
+        name: 'Yet another Object',
+        method: function (callback) {
+            return callback('Hola');
+        }
+    };
+    yetanother.method(one.say); // Hola, undefined
+    ```
+    - say() 안의 this가 전역 객체를 가리키기 때문에 코드가 제대로 동작하지 않는다.
+    - 메서드와 객체를 묶어놓기 위해서는 (바인딩 하기 위해서) 다음같이 bind()를 구현해보자
+        ```javascript
+        function bind(o, m) {
+            return function () {
+                return m.apply(o, [].slice.call(arguments));
+            }
+        }
+
+        var taz = bind({name: 'Taz'}, one.say);
+        console.log(taz('Hi')); // Hi, Taz
+        ```
+#### Function.ptototype.bind()
+- ES5 Function.prototype.bind() 추가
+    ```javascript
+    var newFunc = obj.someFunc.bind(myobj, 1, 2, 3);
+    ```
+- bind() 직접 구현
+    ```javascript
+    if (typeof Function.prototype.bind === 'undefined') {
+        Function.prototype.bind = function (thisArg) {
+            var fn = this,
+                slice = Array.prototype.slice,
+                arges = slice.call(arguments, 1);
+
+                return function () {
+                    return fn.apply(thisArg, args.concat(slice.call(arguments)));
+                };
+        };
+    }
+    
+    var twosay2 = one.say.bind(two);
+    twosay2('봉쥬르!'); // 봉쥬르!, Jodeng
+
+    var twosay3 = one.say.bind(two, '사와디캅');
+    twosay3(); // 사와디캅, Jodeng
+    ```

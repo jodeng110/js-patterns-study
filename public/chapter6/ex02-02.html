@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>6.4 클래스 방식의 상속 패턴 #2 - 생성자 빌려 쓰기 - 02 프로토 타입 체인</title>
+</head>
+
+<body>
+  <script>
+    // 부모 생성자
+    function Parent(name) {
+      this.name = name || 'Adam';
+    }
+
+    // 프로토타입에 기능 추가
+    Parent.prototype.say = function () {
+      return this.name;
+    };
+
+    // 자식 생성자
+    function Child(name) {
+      Parent.apply(this, arguments);
+    }
+
+    var kid = new Child('Jodeng');
+    console.log(kid.name); // Jodeng
+    console.log(typeof kid.say); // undefined
+    // kid.say() // TypeError: kid.say is not a function
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>6.7 클래스 방식의 상속 패턴 #5 - 임시 생서자</title>
+</head>
+
+<body>
+  <script>
+    // inherit() 구현
+    function inherit(C, P) {
+      var F = function (){};
+      F.prototype = P.prototype;
+      C.prototype = new F();
+      C.superclass = P.prototype;
+      C.prototype.constrctor = C;
+    }
+
+    // 부모 생성자
+    function Parent(name) {
+      this.name = name || 'Adam';
+    }
+
+    // 생성자의 프로토타입에 기능을 추가
+    Parent.prototype.say = function () {
+      return `Hello ${this.name}`;
+    };
+
+
+    // 아무 내용이 없는 자식 생성자
+    function Child(name) {
+
+    }
+
+    // 여기서 상속의 마법이 일어난다.
+    inherit(Child, Parent);
+
+    var kid = new Child();
+    console.log(kid, kid.name, kid.say()); // Hello undefiend
+
+    var kid2 = new Child();
+    kid2.name = 'BeomGoen';
+    console.log(kid2, kid2.say()); // Hello BeomGoen
+
+    var kid3 = new Child('Jodeng');
+    console.log(kid3, kid3.say()); // Hello undefiend
+  </script>
+</body>
+
+</html>

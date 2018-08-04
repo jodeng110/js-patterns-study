@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>6.9 프로토타입을 활용한 상속</title>
+</head>
+
+<body>
+  <script>
+    function object(o) {
+      function F() { }
+      F.prototype = o;
+      return new F();
+    }
+    // 상속해줄 객체
+    var parent = {
+      name: "Papa"
+    };
+
+    // 새로운 객체
+    var child = object(parent);
+
+    // 테스트 해보자
+    console.log(child, child.name); // PaPa
+
+    function Person(name) {
+      this.name = name || 'Adam';
+    }
+    Person.prototype.getName = function () {
+      return this.name;
+    };
+
+    // Person 인스턴스 생성
+    var papa = new Person();
+
+    // 이 인스턴스를 상속한다.
+    var kid = object(papa);
+
+    // 부모 자기 자신의 프로퍼티와 프로토타입의 프로퍼티가 모두 상속되었는지 확인
+    console.log(kid, kid.getName(), kid.name); // "Adam", "Adam"
+
+    var kid2 = object(Person.prototype); // 프로토타입 객체만 상속
+    console.log(typeof kid2.getName); // 'function' : 프로토타입 객체를 상속받아 메소드 존재
+    console.log(kid2.getName()); //  name이 없기 때문에 undefiend
+    console.log(typeof kid2.name); // 'undefined'
+
+    var child2 = Object.create(parent, {
+      age: { value: 2 }
+    });
+    console.log(child2);
+    console.log(child2.hasOwnProperty('age')); // true
+  </script>
+</body>
+
+</html>

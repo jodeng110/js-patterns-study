@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>6.10 프로퍼티 복사를 통한 상속 패턴</title>
+</head>
+
+<body>
+  <script>
+    // 얕은 복사 - 프로퍼티 값이 객체, 배열이면 예기치 못한 문제 발생
+    // 객체는 참조의 의하가 때문에 전달받은 프로퍼티 값을 변경하면 원래의 값까지 같이 변경된다.
+    function extend(parent, child) {
+      var i;
+      child = child || {};
+      for (i in parent) {
+        if (parent.hasOwnProperty(i)) {
+          child[i] = parent[i];
+        }
+      }
+      return child;
+    }
+    var dad = { name: 'Adam' };
+    var kid = extend(dad);
+    console.log(kid.name);
+    console.log(dad, kid);
+
+    var dad = {
+      counts: [1, 2, 3],
+      reads: { paper: true }
+    };
+    var kid = extend(dad);
+    console.log(kid.counts.length, dad.counts.length);
+    kid.counts.push(4);
+    console.log(dad.counts.toString()); // 1, 2, 3, 4
+    console.log(dad.reads === kid.reads); // true
+
+    /* 깊은 복사 구현 */
+    function extendDeep(parent, child) {
+      var propName,
+        toStr = Object.prototype.toString,
+        arrayObjStr = '[object Array]';
+
+      child = child || {};
+
+      for (propName in parent) {
+        if (parent.hasOwnProperty(propName)) {
+          if (typeof parent[propName] === 'object') {
+            child[propName] = (toStr.call(parent[propName]) === arrayObjStr) ? [] : {};
+            extendDeep(parent[propName], child[propName]);
+          } else {
+            child[propName] = parent[propName];
+          }
+        }
+      }
+
+      return child;
+    }
+
+    var mom = {
+      counts: [5, 6, 7, 8],
+      reads: { magazine: true }
+    };
+
+    var baby = extendDeep(mom);
+    baby.counts.push(9);
+    baby.counts.push(10);
+    console.log(baby.counts.toString());
+    console.log(mom.counts.toString());
+
+    console.log('isSameReads : ', mom.reads === baby.reads);
+    baby.reads.magazine = false;
+    baby.reads.book = true;
+    console.log(baby.reads);
+    console.log(mom.reads);
+  </script>
+</body>
+
+</html>

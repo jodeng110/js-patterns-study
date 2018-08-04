@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>6.3 클래스 방식의 상속 패턴 #1 - 기본 패턴</title>
+  </head>
+  <body>
+    <script>
+      // inherit() 구현
+      function inherit(C, P) {
+        C.prototype = new P();
+      }
+      // 부모 생성자
+      function Parent(name) {
+          this.name = name || 'Adam';
+      }
+      
+      // 생성자의 프로토타입에 기능을 추가
+      Parent.prototype.say = function () {
+          return `Hello ${this.name}`;
+      };
+
+
+      // 아무 내용이 없는 자식 생성자
+      function Child(name) {
+
+      }
+
+      // 여기서 상속의 마법이 일어난다.
+      inherit(Child, Parent); 
+
+      var kid = new Child();
+      console.log(kid.say()); // Hello Adam
+      
+      var kid2 = new Child();
+      kid2.name = 'BeomGoen';
+      console.log(kid2.say()); // Hello BeomGoen
+
+      var kid3 = new Child('BeomGoen');
+      console.log(kid3.say()); // Hello Adam
+
+    </script>
+  </body>
+</html>

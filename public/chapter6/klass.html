@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>klass 구현 및 테스트</title>
+  </head>
+  <body>
+    <script>
+    var klass = function (Parent, props) {
+      var Child, F, i;
+
+      // 1. 새로운 생성자
+      Child = function () {
+        if (Child.superclass && Child.superclass.hasOwnProperty('__construct')) {
+          Child.superclass.__construct.apply(this, arguments);
+        }
+        if (Child.prototype.hasOwnProperty('__construct')) {
+          Child.prototype.__construct.apply(this, arguments);
+        }
+      };
+
+      // 2. 상속
+      Parent = Parent || Object;
+      F = function  () {};
+      F.prototype = Parent.prototype;
+      Child.prototype = new F();
+      Child.superclass = Parent.prototype;
+      Child.prototype.constructor = Child;
+
+      // 3. 구현 메서드를 추가
+      for (i in props) {
+        if (props.hasOwnProperty(i)) {
+          Child.prototype[i] = props[i];
+        }
+      }
+
+      // 클래스 반환
+      return Child;
+    };
+
+    var Man = klass(null, {
+      __construct: function (what) {
+        console.log("Man's constructor");
+        this.name = what;
+      },
+      getName: function () {
+        return this.name;
+      }
+    });
+
+    var first = new Man('Man');
+    console.log(first.getName()); // Man
+
+    // Man클래스를 상속받아  Betman 구현
+    var BetMan = klass(Man, {
+      __construct: function (what) {
+        console.log("BetMan's constructor");
+        this.age = 0;
+      },
+      getName: function () {
+        console.log(BetMan.suplerclass)
+        var name = BetMan.superclass.getName.call(this);
+        return `I am ${name}!`;
+      },
+      setAge: function (age) {
+        this.age = age;
+      },
+      getAge: function () {
+        return this.age;
+      }
+    });
+
+    var betman = new BetMan('Taz');
+    betman.setAge(38);
+    console.log(betman.getName(), betman.getAge()); // I am Taz
+    console.log(first, betman);
+    </script>
+  </body>
+</html>

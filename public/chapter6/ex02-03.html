@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>6.4 클래스 방식의 상속 패턴 #2 - 생성자 빌려 쓰기 - 03 생성자 빌려쓰기를 적용한 다중 상속</title>
+</head>
+
+<body>
+  <script>
+    function Cat() {
+      this.legs = 4;
+      
+      this.say = function () {
+        return "meaowww";
+      };
+      
+    }
+
+    Cat.prototype.say = function () {
+      return 'meaowww~~';
+    };
+
+    function Bird() {
+      this.wings = 2;
+      this.fly = true;
+    }
+
+    function CatWings() {
+      Cat.apply(this);
+      Bird.apply(this);
+    }
+    var jane = new CatWings();
+    console.dir(jane);
+    console.log(jane.say());
+    // Cat.prototype.say해주면 오류나. 프로토타입 못잡기 때문에!
+    jane.legs = 5;
+
+    var cat = new Cat();
+
+    console.log(jane.legs, cat.legs); // 5, 4 별개구나!
+  </script>
+</body>
+
+</html>

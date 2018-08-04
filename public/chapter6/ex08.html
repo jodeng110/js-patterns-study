@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>6.11 믹스-인</title>
+</head>
+
+<body>
+  <script>
+    function mix() {
+      var arg, prop, child = {}, len = arguments.length;
+      for (arg = 0; arg < len; arg += 1) {
+        for (prop in arguments[arg]) {
+          if (arguments[arg].hasOwnProperty(prop)) {
+            child[prop] = arguments[arg][prop];
+          }
+        }
+      }
+      return child;
+    }
+
+    var cake = mix(
+      { eggs: 2, large: true },
+      { butter: 1, salted: true },
+      { flour: '3 cups' },
+      { sugar: 'sure!' }
+    );
+
+    console.log(cake);
+
+    var cake2 = Object.assign({},
+      { eggs: 2, large: true },
+      { butter: 1, salted: true },
+      { flour: '3 cups' },
+      { sugar: 'sure!' }
+    );
+
+    console.log(cake2);
+  </script>
+</body>
+
+</html>

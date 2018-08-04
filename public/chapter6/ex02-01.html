@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>6.4 클래스 방식의 상속 패턴 #2 - 생성자 빌려 쓰기 - 01</title>
+  </head>
+  <body>
+    <script>
+    // 부모 생성자
+    function Article() {
+        this.tags = ['js', 'css'];
+    }
+    Article.prototype.readText = function () {
+      return 'reading a text';
+    };
+    var article = new Article();
+
+    // 클래스 방식의 패턴 #1을 사용해 article 객체를 상속하는 blog 객체를 생성한다.
+    function BlogPost() {}
+    BlogPost.prototype = article;
+    var blog = new BlogPost();
+    
+    // 생성자 빌려쓰기 패턴을 사용해 article을 상속하는 page객체를 생성
+    function StaticPage() {
+        Article.call(this);
+    }
+    var page = new StaticPage();
+
+    console.log(article.hasOwnProperty('tags'), article.tags); // true
+    console.log(article, article.readText());
+    console.log(blog.hasOwnProperty('tags'), blog.tags); // false
+    console.log(blog, blog.readText());
+    console.log(page.hasOwnProperty('tags'), page.tags); // true
+    console.log(page);
+    
+    //console.log(page.readText()); // TypeError : page.readText is not a function
+    blog.tags.push('html'); // 부모의 프로퍼티에 영향 끼쳐!
+    page.tags.push('php'); // 얘는 별개로 생성된 복사본이기 때문에 영향 X
+    console.log(article.tags.join(', ')); // js, css, html
+    </script>
+  </body>
+</html>
