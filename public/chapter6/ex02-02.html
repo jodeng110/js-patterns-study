@@ -8,6 +8,10 @@
 
 <body>
   <script>
+    /*
+    부모가 가진 자신만의 프로퍼티를 자식의 프로퍼티로 복사해주는 일회성 동작.
+    - __proto__라는 링크는 유지되지 않음.
+    */
     // 부모 생성자
     function Parent(name) {
       this.name = name || 'Adam';

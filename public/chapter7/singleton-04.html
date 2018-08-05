@@ -47,14 +47,14 @@
     // 모든 프로토타입 프로퍼티가 언제 선언되었는지와 상관 없이 동작한다.
     console.log(uni.nothing); // true
     console.log(uni2.nothing); // true
-    console.log(uni.everything) // undefiend
-    console.log(uni2.everything) // undefined
+    console.log(uni.everything) // true
+    console.log(uni2.everything) // true
 
 
     // 일반 프로퍼티
-    console.log(uni.band);
+    console.log(uni.band); // Big
     console.log(uni.constructor.name); // Universe
-    console.log(uni.constructor === Universe); // false
+    console.log(uni.constructor === Universe); // true
   </script>
 </body>
 

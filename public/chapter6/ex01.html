@@ -10,6 +10,7 @@
       function inherit(C, P) {
         C.prototype = new P();
       }
+
       // 부모 생성자
       function Parent(name) {
           this.name = name || 'Adam';
@@ -38,7 +39,6 @@
 
       var kid3 = new Child('BeomGoen');
       console.log(kid3.say()); // Hello Adam
-
     </script>
   </body>
 </html>
