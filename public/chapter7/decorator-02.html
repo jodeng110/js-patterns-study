@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>데코레이터 패턴(장식자) - 02 : 목록을 사용한 구현</title>
+</head>
+
+<body>
+  <script>
+    function Sale(price) {
+      this.price = price || 100;
+      this.decorators_list = [];
+    }
+    Sale.prototype.getPrice = function () {
+      var price = this.price,
+        i, max = this.decorators_list.length,
+        name;
+      for (i = 0; i < max; i += 1) {
+        name = this.decorators_list[i];
+        price = Sale.decorators[name].getPrice(price);
+      }
+      return price;
+    };
+    Sale.prototype.decorate = function (decorator) {
+      this.decorators_list.push(decorator);
+    };
+
+    Sale.decorators = {};
+    Sale.decorators.fedtax = {
+      getPrice: function (price) {
+        return price + price * 5 / 100;;
+      }
+    };
+    Sale.decorators.quebec = {
+      getPrice: function (price) {
+        return price + price * 7.5 / 100;;
+      }
+    };
+    Sale.decorators.money = {
+      getPrice: function (price) {
+        return `$${price.toFixed(2)}`;
+      }
+    };
+    Sale.decorators.cdn = {
+      getPrice: function (price) {
+        return `CDN$${price.toFixed(2)}`;
+      }
+    };
+    // 사용 시
+    var sale = new Sale(100);
+    sale.decorate('fedtax');
+    sale.decorate('quebec');
+    sale.decorate('money');
+    console.log(sale.getPrice()); // $112.88
+
+    // 지방세가 없고 통화형식이 캐나다 달러일 때
+    var sale2 = new Sale(200);
+    sale2.decorate('fedtax');
+    sale2.decorate('cdn');
+    console.log(sale2.getPrice()); // CDN$210.00
+
+    /*
+    사용 시 decorate()메서드를 통해 사용할 장식을 등록만 시켜주고
+    실제 getPrice()할때 모든 연산을 한다.
+    */
+  </script>
+</body>
+
+</html>

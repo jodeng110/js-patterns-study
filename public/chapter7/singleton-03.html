@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>싱글톤-03 클로저에 인스턴스 저장하기</title>
+</head>
+
+<body>
+  <script>
+
+    /* 클로저 인스턴스 인스턴스 저장하기 */
+
+    function Universe() {
+      // 캐싱된 인스턴스
+      var instance = this;
+
+      this.start_time = 0;
+      this.band = "Big";
+
+      // 생성자 재작성
+      Universe = function () {
+        return instance;
+      }
+    }
+
+    Universe.prototype.nothing = true;
+
+    var uni = new Universe();
+    // 첫번째 객체가 만들어진 이후 다시 프로토토 타입 추가
+    Universe.prototype.everything = true;
+
+    var uni2 = new Universe();
+
+    console.log(uni === uni2); // true
+    console.log(uni.nothing); // true
+    console.log(uni2.nothing); // true
+    console.log(uni.everything) // undefiend
+    console.log(uni2.everything) // undefined
+
+    console.log(uni.constructor.name); // Universe
+    console.log(uni.constructor === Universe); // false
+
+    /*
+    uni.constructor === Universe  // false 이유는?
+    uni.contstructor가 더이상 Universe() 생성자와 같지 않은 이유는 uni.constructor가
+    재정의된 생성자가 아닌 원본 생성자를 가리키고 있기 때문.
+    */
+
+  </script>
+</body>
+
+</html>

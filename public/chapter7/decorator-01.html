@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>데코레이터 패턴 - 01</title>
+  </head>
+  <body>
+    <script>
+      function Sale(price) {
+        this.price = price || 100;
+      }
+      Sale.prototype.getPrice = function () {
+        return this.price;
+      };
+      Sale.prototype.decorate = function (decorator) {
+        var F = function () {},
+            overrides = this.constructor.decorators[decorator],
+            i, newobj;
+        F.prototype = this;
+        newobj = new F();
+        newobj.superclass = F.prototype;
+        for (i in overrides) {
+          if (overrides.hasOwnProperty(i)) {
+            newobj[i] = overrides[i];
+          }
+        }
+        return newobj;
+      };
+
+      Sale.decorators = {};
+      Sale.decorators.fedtax = {
+        getPrice: function () {
+          var price = this.superclass.getPrice();
+          price += price * 5 / 100;
+          return price;
+        }
+      };
+      Sale.decorators.quebec = {
+        getPrice: function () {
+          var price = this.superclass.getPrice();
+          price += price * 7.5 / 100;
+          return price;
+        }
+      };
+      Sale.decorators.money = {
+        getPrice: function () {
+          return `$${this.superclass.getPrice().toFixed(2)}`;
+        }
+      };
+      Sale.decorators.cdn = {
+        getPrice: function () {
+          return `CDN$${this.superclass.getPrice().toFixed(2)}`;
+        }
+      };
+      // 사용 시
+      var sale = new Sale(100);
+      sale = sale.decorate('fedtax');
+      sale = sale.decorate('quebec');
+      sale = sale.decorate('money');
+      console.log(sale.getPrice()); // $112.88
+
+      // 지방세가 없고 통화형식이 캐나다 달러일 때
+      var sale2 = new Sale(200);
+      sale2 = sale2.decorate('fedtax');
+      sale2 = sale2.decorate('cdn');
+      console.log(sale2.getPrice()); // CDN$210.00
+    </script>
+  </body>
+</html>

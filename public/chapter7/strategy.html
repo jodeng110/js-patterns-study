@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>전략 패턴</title>
+</head>
+
+<body>
+  <script>
+    // 폼에서 가져온 데이터
+    var data = {
+      first_name: 'Super',
+      last_name: 'Man',
+      age: 'unknown',
+      username: 'o_O'
+    };
+
+    var validator = {
+      types: {},
+      messages: [],
+      config: {},
+      validate: function (data) {
+        var i, msg, type, checker, result_ok;
+        this.messages = [];
+        for (i in data) {
+          if (data.hasOwnProperty(i)) {
+            type = this.config[i];
+            checker = this.types[type];
+
+            if (!type) {
+              continue;
+            }
+            if (!checker) {
+              throw {
+                name: 'ValidationError',
+                message: `${type}값을 처리할 유효성 검사기가 존재하지 않습니다.`
+              };
+            }
+            result_ok = checker.validate(data[i]);
+            if (!result_ok) {
+              msg = `'${i}'값이 유효하지 않습니다. ${checker.instructions}`;
+              this.messages.push(msg);
+            }
+          }
+        }
+        return this.hasErrors();
+      },
+      hasErrors: function () {
+        return this.messages.length !== 0;
+      }
+    };
+
+    validator.config = {
+      first_name: 'isNonEmpty',
+      age: 'isNumber',
+      username: 'isAlphaNum'
+    };
+
+    validator.types.isNonEmpty = {
+      validate: function (value) {
+        return value !== '';
+      },
+      instructions: '이 값은 필수입니다.'
+    };
+    validator.types.isNumber = {
+      validate: function (value) {
+        return !isNaN(value);
+      },
+      instructions: '숫자만 사용할 수 있습니다. 예: 1, 3.14 or 2010'
+    };
+    validator.types.isAlphaNum = {
+      validate: function (value) {
+        return !/[^a-z0-9]/i.test(value);
+      },
+      instructions: '특수 문자를 제외한 글자와 숫자만 사용할 수 있습니다.'
+    };
+
+    validator.validate(data);
+    if (validator.hasErrors()) {
+      console.error(validator.messages.join('\n'));
+    }
+  </script>
+</body>
+
+</html>

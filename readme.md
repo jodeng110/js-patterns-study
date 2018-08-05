@@ -3085,3 +3085,845 @@ f(1, 2, 3, 4 , 5, 6);
     var twosay3 = one.say.bind(two, '사와디캅');
     twosay3(); // 사와디캅, Jodeng
     ```
+
+## Chapter 7 - 디자인 패턴
+- GoF 책에서 다뤄진 디자인 패턴은 객체 지향적인 소프트웨어 설계에 관련된 일반적인 문제에 대한 해답을 제시
+- 디자인 패턴은 오랫동안 쓰여왔고, 다양한 상황에서 유용성 입증
+- 주로 C++, 자바처럼 엄격한 자료형의 정적 클래스 기반 언어 관점에서 연구
+- 자바스크립트는 Loosely 느슨한 자료형의 동적 프로토토아비 기반 언어이기 때문에, 일부 디자인 패턴은 놀라울 정도로 쉽게, 심지어 아주 간단한 방법으로 구현 가능.
+
+### 7.1 싱글톤 (Singleton)
+- 샘플코드) chapter7/singleton-01.html 참고
+- 특정 클래스의 인스턴스를 오직 하나만 유지!
+- 동일한 클래스를 사용하여 새로운 객체를 생성하면, 두 번째 부터는 처음 만들어진 객체를 얻게 된다.
+- 자바스크립트에 싱글톤 패턴을 어떻게 적용할까?
+    - 자바스크립트에는 클래스가 없고 오직 객체만 있다.
+    - 새로운 객체를 만들면 실제로 이 객체는 다른 객체와도 같지 않기 때문에 이미 '싱글톤'
+    - 객체 리터럴로 만든 단순한 객체 (싱글톤의 예)
+    ```javascript
+    var obj = {
+        myProp: 'myValue'
+    };
+    ```
+    - 자바스크립트에서 객체들은 동일한 객체가 아니고서는 절대로 같을 수 없다!
+    - 완전히 같은 멤버를 가지는 똑같은 객체를 만들더라도 이 객체가 동일하지는 않아.
+    ```javascript
+    var obj2 = {
+        myProp: 'myValue'
+    }
+    obj === obj2 // false
+    obj == obj // false
+    ```
+- 자바스크립트에서 객체 리터럴을 이용해 객체를 생성할 때마다 사실은 싱글톤을 만드는 것이고, 싱글톤을 만들기 위한 별도의 문법이 존재하지 않는다.
+- 자바스크립트문맥에서 '싱글톤'이라고 얘기하는 것은, 모듈 패턴을 뜻하기도 한다.
+
+#### new 사용하기
+- 자바스크립트에는 클래스가 없다.
+- 자바스크립트에는 생성자 함수를 사용해 객체를 만드는 new구문이 있고, 때로는 이 구문을 사용해서 싱글톤을 구현하고자 할 수 있다.
+- 동일한 생성자로 new를 사용해서 여러 개의 객체를 만들 경우, 셀제로는 동일한 객체에 대한 새로운 포인터만 반환하도록 구현
+- 다음의 코드는 우리가 기대하는 동작 방식을 보여준다.
+    ```javascript
+    var uni = new Universe();
+    var uni2 = new Universe();
+
+    uni === uni2 // true
+    ```
+    - new로 생성한 인스턴스 객체가 같으려면??
+        - 객체의 인스턴스인 this가 생성되면 Universe 생성자가 이를 캐시한 후, 그 다음 번에 생성자가 호출되었을 때 캐시된 인스턴스를 반환하게 하면 된다.
+        - 이를 위해 몇가지 선택사항
+            - 인스턴스를 저장하기 위해 전역 변수 사용. 일반적인 원칙상 전역변수 선언은 좋지 않기 때문에 이 방법을 추천하지 않음. 누군가 실수로 이 전역변수를 덮어 쓸 수도 있다.
+            - 생성자의 스태틱 프로퍼티에 인스턴스를 저장한다. 자바스크립트에서 함수는 객체이므로, 프로퍼티를 가질 수 있다. Universe.instance와 같은 프로퍼티에 인스턴스를 저장할 수 있다. 깔끔하고 괜찮은 방법이지만 instance 프로퍼티가 공개되어 있기 때문에, 외부 코드에서 값을 변경하면 인스턴스를 잃어버릴 수 있다는 한 가지 단점이 있다.
+            - 인스턴스를 클로저로 감싼다. 이 방법은 인스턴스를 비공개로 만들어 생성자 외부에서 수정할 수 없게 해준다. 추가적인 클로저가 단점!
+#### 스태틱 프로퍼티에 인스턴스 저장하기
+- 샘플코드) chapter7/singleton-02.html 참고
+- Universe 생성자의 스태틱 프로퍼티 내부에 단일 인스턴스를 저장하는 예제
+    ```javascript
+    function Universe() {
+        // 이미 인스턴스가 존재하는가?
+        if (typeof Universe.instance === 'object') {
+            return Universe.instance;
+        }
+
+        // 정상적으로 진행한다.
+        this.start_time = 0;
+        this.band = "Big";
+
+        // 인스턴스를 캐시한다.
+        Universe.instance = this;
+
+        // 함축적인 반환
+        // return this;
+    }
+
+    // 테스트
+    var uni = new Universe();
+    var uni2 = new Univeerse();
+    uni === uni2; // true
+    ```
+- Universe.instance에 스태틱한 프로퍼티를 지정해 준다.
+- 단점) instance가 공개되어있다!
+#### 클로저에 인스턴스 저장하기
+- 샘플코드) chapter7/singleton-03.html 참고
+- 클래스 방식의 싱글톤을 만든느 또다른 방법은 클로저를 사용해 단일 인스턴슬르 보호하는 방법
+    ```javascript
+    function Universe() {
+        // 캐싱된 인스턴스
+        var instance = this;
+
+        // 정상적으로 진행
+        this.start_time = 0;
+        this.band = "Big";
+
+        // 생성자를 재작성 한다.
+        Universe = function () {
+            return instance;
+        };
+    }
+
+    // 테스트
+    var uni = new Universe();
+    var uni2 = new Universe();
+    uni === uni2; // true
+    ```
+- 비공개 스태틱 멤버 패턴 사용
+- 자기자신을 정의하는 함수 패턴
+    - 단점) 재작성된 함수는 재정의 시점 이전에 원본 생성자에 추가된 프로퍼티를 잃어버린다는 점.
+    - Universe()의 프로토타입에 무언가를 추가해도 원본 생성자로 생성된 인스턴스와 연결되지 않는다.
+    ```javascript
+    // 프로토타입에 추가
+    Universe.prototype.nothing = true;
+
+    var uni = new Universe();
+
+    // 첫번째 객체가 만들어진 이후
+    // 다시 프로토타입에 추가
+    Universe.prototype.everything = true;
+
+    var uni2 = new Universe();
+
+    uni.nothing; // true
+    uni2.nothing; // true
+    uni.everything; // undefined
+    uni2.everything; // undefined
+
+    uni.constructor.name; // "Universe"
+    uni.constoructor === Universe; // false
+    ```
+    - uni.constructor === Universe  // false 이유는?
+        - uni.contstructor가 더이상 Universe() 생성자와 같지 않은 이유는 uni.constructor가 재정의된 생성자가 아닌 원본 생성자를 가리키고 있기 때문.
+    - 프로토타입 생성자 포인터가 제대로 동작하도록 수정해보자!
+        - 샘플코드) chapter7/singleton-04.html 참고
+### 7.2 팩터리(Factory)
+- 샘플코드) chapter7/factory-01.html 참고
+- 팩터리 패턴의 목적은 객체들을 생성하는 것.
+- 클래스 내부에서 또는 클래스의 스태틱 메서드로 구현
+- 팩터리 패턴의 목적
+    - 비슷한 객체를 생성하는 반복 작업 수행
+    - 팩터리 패턴의 사용자가 컴파일 타임에 구체적인 타입(클래스)을 모르고도 객체 생성 가능
+        - 정적 클래스 언어에서 중요
+        - 정적 클래스 언어에서는 컴파일 타임에 클래스에 대한 정보 없이 인스턴스를 생성하기 쉽지 않다.
+- 팩터리 메서드로 만들어진 객체들은 의도적으로 동일한 부모 객체를 상속한다.
+    - 특화된 기능을 구현하는 서브 클래스들.
+- 구현 예제
+    - CarMaker 생성자 : 공통의 부모
+    - CarMaker.factory() : car객체들을 생성하는 스태틱 메서드
+    - CarMaker.Compact, CarMaker.SUV, CarMaker.Convertible : CarMaker를 상속하는 특화된 생성자. 이 모두는 부모의 스태틱 프로퍼티로 정의되어 전역 네임스페이스를 깨끗하게 유지하며, 필요할 때 쉽게 찾을 수 있다.
+
+    ```javascript
+    var corolla = CarMaker.factory('Compact');
+    var solstice = CarMaker.factory('Convertible');
+    var cherokee = CarMaker.factory('SUV');
+    corolla.drive();
+    solstice.drive();
+    cherokee.drive();
+    ```
+    - var corolla = CarMaker.factory('Compact');
+        - 런타임시 문자열로 타입을 받아 해당 타입의 객체를 생성하고 반환한다.
+        - new 와 함꼐 생성자를 사용하지 않고, 객체 리터럴도 보이지 않는다.
+        - 문자열로 식별되는 타입에 기반하여 객체들을 생성하는 함수가 있다.
+    - 팩터리 패턴 구현 예
+    ```javascript
+    // 부모 생성사
+    function CarMaker() {}
+
+    // 부모의 메서드
+    CarMaker.prototype.drive = function () {
+        return `Vroom, I have ${this.doors} doors.`;
+    };
+
+    // 스태틱 factory 메서드
+    CarMaker.factory = function (type) {
+        var constr = ty;e,
+            newcar;
+        
+        // 생성자가 존재하지 않으면 에러 발생
+        if (typeof CarMaker[constr] !== 'function') {
+            throw {
+                name: 'Error',
+                message: `${constr} doesn't exist`
+            };
+        }
+
+        // 생성자의 존재를 확인했으므로 부모를 상속한다.
+        // 상속은 단 한번만 실행하도록 한다.
+        if (typeof CarMaker[constr].prototype.drive !== 'function') {
+            CarMaker[constr].prototype = new CarMaker();
+        }
+
+        // 새로운 인스턴스를 생성한다.
+        newcar = new CarMaker[constr]();
+
+        // 다른 메서드 호출이 필요하면 여기서 실행한 후, 인스턴스를 반환
+        return newcar;
+    };
+
+    // 구체적인 자동차 메이커들을 선언한다.
+    CarMaker.Compact = function () {
+        this.doors = 4;
+    };
+    CarMaker.Convertible = function () {
+        this.doors = 2;
+    };
+    CarMaker.SUV = function () {
+        this.doors = 24;
+    };
+
+    ```
+#### 내장 객체 팩터리
+- 자바스크립트에서 내장된(built-in) 전역 Object()생성자를 생각해보자
+    - 입력값에 따라 다른 객체를 생성하기 떄문에 '팩터리처럼 동작'한다고 볼수 있다.
+    - 숫자 원시 데이터 타입을 전달하면, 이 생성자는 내부적으로 Number()생성자로 객체를 만든다.
+    - 문자열, 불린 값도 동일하게 적용
+- 몇가지 예제와 테스트 해보자
+    - 샘플코드) chapter7/factory-02.html 참고
+    ```javascript
+    var o = new Object(),
+        n = new Object(1),
+        s = Object('1'),
+        b = Object(true);
+    
+    // 테스트
+    o.constructor === Object;
+    n.constructor === Number;
+    s.constructor === String;
+    b.constructor === Boolean;
+    ```
+### 7.3 반복자(Iterator)
+- 샘플코드) chapter7/iterator.html 참고
+- 반복자 패턴에서, 객체는 일종의 집합적인 데이터를 가진다.
+- 데이터가 저장된 내부구조는 복잡하더라도 개별 요소에 쉽게 접근할 방법이 필요할 것이다.
+- 객체의 사용자는 데이터가 어떻게 구조화 되었는지 알 필요가 없고 개별 요소로 원하는 작업을 할수만 있으면 된다.
+- 반복자 패턴에서, 객체는 next()메서드를 제공한다. next()를 연이어 호출하면 반드시 다음 요소를 반환해야 한다.
+    ```javascript
+    var element;
+    while(element = agg.next()) {
+        // element로 어떤 작업을 수행한다.
+        console.log(element);
+    }
+    ```
+- 반복자 패턴에서 객체는 보통 hasNext()라는 편리한 메서드도 제공한다.
+    -  객체의 사용자는 이 메서드로 데이터의 마지막에 다다랐는지 확인 가능
+    ```javascript
+    while (agg.hasNext()) {
+        // 다음 요소로 어떤 작업을 수행한다.
+        console.log(agg.next());
+    }
+    ```
+- 반복자 패턴을 구현할 때, 데이터는 물론 다음에 사용할 요소를 가리키는 포인터(인덱스)도 비공개로 저장해두는 것이 좋다.
+    - 데이터는 단순한 보통의 배열이고, 다음번 순서의 요소를 가져오는 Next()배열 요소를 하나 걸러 반환한다고 가정하자.
+    ```javascript
+    var agg = (function () {
+        var index = 0,
+            data = [1, 2, 3, 4, 5],
+            length = data.length;
+        
+        return {
+            next: function () {
+                var element;
+                if (!this.hasNext()) {
+                    return null;
+                }
+                element = data[index];
+                index = index + 2;
+                return element;
+            },
+            hasNext: function () {
+                return index < length;
+            },
+            rewind: function () {
+                // 포인털르 다시 처음으로 돌림
+                index = 0;
+            },
+            current: function () {
+                // 현재 요소 반환
+                // next()는 포인터를 전진시키기 때문에 이 작업을 할 수 없다.
+                return data[index];
+            }
+        };
+    })();
+
+    while(agg.hasNext()) {
+      console.log(agg.next());
+    }
+
+    agg.rewind();
+    console.log(agg.current()) // 1
+    ```
+### 7.4 장식자(Decortaor)
+- 장식자 패턴을 이용하면 런타임시 부가적인 기능을 객체에 동적으로 추가할 수 있다.
+- 스태틱 클래스에서는 쉽지 않은 작업
+    - 객체를 변형할 수 있는 자바스크립트에서는 객체에 기능을 추가하는 절차에 아무런 문제가 없다.
+- 장식자 패턴의 편리한 특징은 기대되는 행위를 사용자화 하거나 설정할수 있다는 것이다.
+    - 처음에는 기본적인 몇 가지 기능을 가지는 평범한 객체로 시작
+    - 사용 가능한 장식자들의 풀에서 원하는 것을 골라 객체에 기능을 덧붙여 간다.
+    - 순서가 중요하다면 어떤 순서로 기능을 추가할지도 지정 가능.
+#### 사용 방법
+- 어떤 물건을 파는 웹 애플리케이션 제작
+- 각각의 새로운 판매건은 새로운 sale객체
+- sale객체는 상품의  가격을 알고있으며, sale.getPrice()메서드를 호출하면 해당 가격을 반환
+- 상황에 따라 추가기능으로 객체 장식 가능
+- 예제 시나리오
+    - 캐나다의 퀘백 지방에 있는 소비자에게 물건을 판매하는 시나리오
+    - 소비자는 연방세와 퀘백의 지방세 지불
+    - 장식자 패턴에 따르면, 연방세 장식자와 퀘백 지방세 장식자로 객체를 '장식한다'라고 말할 수 있다.
+    - 통화 형식을 지정한느 기능으로 장식
+    ```javascript
+    var sale = new Sale(100);
+    sale = sale.decoreate('fedtax');
+    sale = sale.decorate('quebec');
+    sale = sale.decorate('money');
+    sale.getPrice();
+    ```
+    - 또 다른 시나리오로 소비자가 지방세가 없는 지역에 있고 통화 형식은 캐나다 달러 형식으로 하고 싶다고 하자!
+    ```javascript
+    var sale = new Sale(100);
+    sale = sale.decorate('fedtax');
+    sale = sale.decorate('cdn');
+    sale.getPrice();
+    ```
+- 장식자 패턴은 런타임시 기능을 추가하고 객체를 변경하는 유연한 방법
+#### 구현
+- 샘플코드) chapter7/decorator-01.html 참고
+- 장식자 패턴을 구현하기 위한 방법
+    - 모든 장식자 객체에 특정 메서드를 포함시킨 후, 이 메서드를 엎어쓰게 만드는 것.
+        - 각 장식자는 사실 이전의 장식자로 기능이 추가된 객체를 상속
+        - 장식 기능을 담당하는 메서드들은 superclass(상속된 객체)에 있는 동일한 메서드를 호출하여 값을 가져온 다음 추가 작업을 덧붙이는 방식
+- 결과적으로, 첫번째 예제에서 sale.getPrice()를 호출하면 money장식자의 동일한 메서들르 호출한 셈.
+    - 그러나 각각 꾸며진 메서드는 우선 부모의 메서드를 호출하기 때문에, money의 getPrice(), quebec의 getPrice()를 우선 호출하게됨.
+```javascript
+funcgtion Sale(price) {
+    this.price = price || 100;
+}
+Sale.prototype.getPrice = function () {
+    return this.price;
+};
+```
+- 장식자 객체들은 생성자 프로퍼티 Sale.decorators의 프로퍼티로 구현
+```javascript
+Sale.decorators = {};
+```
+- 이 장식자 객체는 getPrice()메서드를 특화하여 구현
+    - 이 메서드가 처음에는 부모의 메서드로부터 값을 가져온 다음 그 값을 변경
+    ```javascript
+    Sale.decorators.fedtax = {
+        getPrice: function () {
+            var price = this.superclass.getPrice();
+            price += price * 5 / 100;
+            return price;
+        }
+    };
+    ```
+    - 이런 방법으로 장식자를 얼마든지 구현가능.
+        - 이 장식들은 플러그인 처럼 Sale()의 핵심 기능을 확장하여 구현할 것이다.
+        - 별도의 파일에서 개발할 수 도있고 서드파티 개발자와 공유할 수도 있다.
+    ```javascript
+    Sale.decorators.quebec = {
+        getPrice: function () {
+            var price = this.superclass.getPrice();
+            price += price * 7.5 / 100;
+            return price;
+        }
+    };
+    Sale.decorators.money = {
+        getPrice: function () {
+            return `$${this.superclass.getPrice().toFixed(2)}`;
+        }
+    };
+    Sale.decorators.cdn = {
+        getPrice: function () {
+            return `CDN$ ${this.superclass.getPrice().toFixed(2)}`;
+        }
+    };
+    ```
+    - decorate() 메서드 구현
+    ```javascript
+    Sale.prototype.decorate = function (decorator) {
+        var F = function () {},
+            overrides = this.constructor.decorators[decorator],
+            i, newobj;
+        F.prototype = this;
+        newobj = new F();
+        newobj.superclass = F.prototype;
+        for (i in overrides) {
+            if (overrides.hasOwnProperty(i)) {
+                newobj[i] = overrides[i];
+            }
+        }
+        return newobj;
+    };
+    ```
+    - decorate()는 다음과 같이 호출
+    ```javascript
+    sale = slae.decorate('fedtax');
+    ```
+#### 목록을 사용한 구현
+- 샘플코드) chapter7/decorator-01.html 참고
+- 자바스크립트의 동적 특성을 최대한 활용하며 상속은 전혀 사용하지 않는다.
+- 꾸며진 메서드가 체인 안에 있는 이전의 메서들르 호출하는 대신에, 간단하게 이전 메서드의 결과를 다음 메서드에 매개변수 전달.
+- 이 구현 방법은 장식을 취소하거나 제거하기 쉽다.
+- 장식자 목록에서 요소를 삭제하기만 하면된다.
+```javascript
+var sale = new Sale(100);
+sale.decorate('fedtax');
+sale.decorate('quebec');
+sale.decorate('money');
+sale.getPrice();
+
+function Sal(eprice) {
+    this.price = price || 100;
+    this.decorators_list = [];
+}
+
+Sale.decorators = {};
+Sale.decorators.fedtax = {
+    getPrice: function (price) {
+        return price + price * 5 / 100;
+    }
+};
+Sale.decorators.quebec = {
+    getPrice: function (price) {
+        return price + price * 7.5 / 100;
+    }
+};
+Sale.decorators.money = {
+    getPrice: function (price) {
+        return `$${price.toFixed(2)}`;
+    }
+};
+```
+- 여기서는 decorators의 getPrice()메서드가 간단해졌다.
+- 프로토타입의 decorate(), getPrice() 메서드 변경
+```javascript
+Sale.prototype.decorate = function (decorator) {
+    this.decorators_list.push(decorator);
+};
+Sale.prototype.getPrice = function () {
+    var price = this.price,
+        i, max = this.decorators_list.length,
+        name;
+    
+    for (i = 0; i < max; i += 1) {
+        name = this.decorators_list[i];
+        price = Sale.decorators[name].getPrice(price);
+    }
+    return price;
+};
+```
+- 장식되기로 동의한 메서드만 모든 작업이 수행된다.
+### 7.5 전략
+- 전략 패턴은 런타임에 알고리즘을 선택할 수 있게 해준다.
+- 사용자가 동일한 인터페이스를 유지하면서, 특정한 작업을 처리할 알고리즘을 여러 가지 중에서 상황에 맞게 선택할 수 있다.
+- 전략 패턴을 사용하는 예제 : 폼 유효성 검사
+    - validate() 메서드를 가지는 validator객체를 만듦.
+    - 이 메서드는 폼의 특정한 타입에 관계 없이 호출되고, 항상 동일한 결과, 즉 유효성 검사를 통과하지 못한 데이터 목록과 함께 에러 메시지를 반환.
+    - 사용자는 구체적인 폼과 검사할 데이털르 따라서 다른 종류의 검사 방법을 선택 가능.
+    - 유효성 검사기가 작업을 처리할 최선의 '전략'을 선택
+    - 그에 해당하는 적절한 알고리즘에 실질적인 데이터 검증 작업 위임.
+#### 데이터 유효성 검사 예제
+- 샘플코드) chapter7/strategy.html 참고
+- 웹 페이지상 폼에서 가져온 데이터
+    ```javascript
+    var data = {
+        first_name: 'Super',
+        last_name: 'Man',
+        age: 'unknown',
+        username: 'o_O'
+    };
+    ```
+- 우선 설정을 통해 어떤 데이터를 유효한 데이터로 받아 들일지 규칙을 지정
+    - 이름(first_name)은 어떤 값이어도 상관 X
+    - 성(last_name)은 필수 값이 아니다.
+    - 나이(age)는 숫자
+    - 사용자명(username)은 특수문자를 제외한 글자와 숫자로만 이루어져야 한다.
+- 위에 대한 규칙을 설정
+    ```javascipt
+    validator.config = {
+        first_name: 'isNonEmpty',
+        age: 'isNumber',
+        username: 'isAlphaNum'
+    };
+    ```
+- 유효성 검사기(validator)객체가 데이터를 처리할 수 있도록 설정되었으니, validate()메서드를 호출하여 검증 오류가 발생하는지 콘솔에 출력
+    ```javascript
+    validator.validate(data);
+    if (validator.hasErrors()) {
+        console.log(validator.message.join('\n'));
+    }
+    ```
+    - 이 코드는 다음과 같은 에러메세지를 출력한다.
+        - '나이'값이 유효하지 않습니다. 숫자만 사용할 수 있습니다. 예: 1, 3.14, 2010
+        - '사용자명'값이 유효하지 않습니다. 특수 문자를 제외한 글자와 숫자만 사용할 수 있습니다.
+- 유효성 검사기(validator)객체가 어떻게 구현될까?
+    - 검사에 사용되는 알고리즘 객체들은 사전에 정의된 인터페이스를 가진다.
+    - 이 객체들은 validate()메서드와 에러 메시지에서 사용될 한 주 ㄹ짜리 도움말 정보인 instructions프로퍼티 제공
+    ```javascript
+    // 값을 가지는지 확인
+    validator.types.isNonEmpty = {
+        validate: function (value) {
+            return value !== '';
+        },
+        instructions: '이 값은 필수 입니다.'
+    };
+    // 숫자 값인지 확인
+    validator.types.isNumber = {
+        validate: function (value) {
+            return !isNaN(value)
+        },
+        instructions: '숫자만 사용할 수 있습니다. 예: 1, 3.14 or 2010'
+    };
+    // 값이 문자와 숫자로만 이루어져 있는지 확인
+    validator.types.isAlphaNum = {
+        validate: function () {
+            return !/[^a-z0-9]/i.test(value);
+        },
+        instructions: '특수 문자를 제외한 글자와 숫자만 사용할 수 있습니다.'
+    };
+    ```
+- validator객체 구현
+    ```javascript
+    var validator = {
+        // 사용할 수 있는 모든 검사 방법들
+        types: {},
+
+        // 현재 유효성 검사 세션의 에러 메세지들
+        messages: [],
+
+        // 현재 유효성 검사 세션의 에러 메시지들
+        // '데이터 필드명: 사용할 검사 방법'의 형식
+        config: {},
+
+        // 인터페이스 메서드
+        // data는 이름 => 값 쌍
+        validate: function (data) {
+            var i, msg, type, checker, result_ok;
+
+            // 모든 메세지를 초기화
+            this.messages = [];
+
+            for (i in data) {
+                if (data.hasOwnProprty(i)){
+                    type = this.config[i];
+                    checker = this.types[type];
+
+                    if (!type) {
+                        continue; // 설정된 검사 방법이 없을 경우 건너뛰기
+                    }
+
+                    if (!checker) { // 설정이 존재하나 해당하는 검사 방법을 찾을 수 없는 경우
+                        throw {
+                            name: 'ValidationError',
+                            message: `${type}값을 처리할 유효성 검사기가 존재하지 않습니다.`
+                        };
+                    }
+                    result_ok = checker.validate(data[i]);
+                    if (!result_ok) {
+                        msg = `'${i}'값이 유효하지 않습니다. ${checker.instructions}`;
+                        this.messages.push(msg)
+                    }
+                }
+            }
+            return this.hasErrors();
+        },
+        // 도우미 메서드
+        hasErrors: function () {
+            return this.messages.length !== 0;
+        }
+    };
+    ```
+### 7.6 퍼사드(Facade)
+- 퍼사드 패턴은 객체의 대체 인터페이스를 제공한다.
+- 메서드를 짧게 유지하고 하나의 메서드가 너무 많은 작업을 처리하지 않게 하는 방법은 설계상 좋은 습관
+- 하지만 이렇게 하다보면 메서드 숫자가 엄청나게 많아지거나 superclass 메서드에 엄청나게 많은 매개변수를 전달하게 될 수있다.
+- 두 개 이상 메서드가 함께 호출되는 경우가 많다면, 이런 메서드 호출들을 하나로 묶어주는 새로우 메서드를 만드는게 좋다.
+- 브라우저 이벤트를 처리할 때 사용하는 메서드
+    - stopPropagation() : 이벤트가 상위 노드로 전파되지 않게 중단
+    - prevetDefault() : 브라우저의 기본 동작 막기
+        - 예를 들어, 지정된 링크로 이동하거나 폼을 전송하지 못하기 함.
+- 위의 브라우저 이벤트 관련하여 사용되는 메서드들은 함께 사용될때가 많다.
+    - 퍼사드 패턴을 사용해서 이 둘을 묶는 메서드를 생성하자!
+    ```javascript
+    var myevent = {
+        stop: function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+    ```
+- 퍼사드 패턴은 브라우저 스크립팅에더 적합
+    - 브라우저 간의 차이점을 퍼사드 뒤편에 숨길 수 있기 때문
+    - IE에서의 이벤트 API의 차이를 처리하는 코드를 추가해보자
+    ```javascript
+    var myevent = {
+        stop: function (e) {
+            // IE이외의 모든 브라우저
+            if (typeof e.preventDefault === 'function') {
+                e.preventDefault();
+            }
+            if (typeof e.stopPropagation === 'function') {
+                e.stopPropagation();
+            }
+            // IE
+            if (typof e.returnValue === 'boolean') {
+                e.returnValue = false;
+            }
+            if (typeof e.cancelBubble === 'boolean') {
+                e.cancelBubble = true;
+            }
+        }
+    };
+    ```
+- 해당 부분 최종 교체시 변경폭을 줄일 수 있다.
+### 7.7 프록시(Proxy)
+- 하나의 객체가 다른 객체에 대한 인터페이스로 동작한다.
+- 퍼사드 패턴이 메서드 호출 몇개를 결합시켜 펀의를 제공하는 것에 불과하다면, 프록시는 클라이언트 객체와 실제 대상 객체 사이에 존재하면서 접근을 통제한다.
+- 이 패턴은 비용이 증가하는 것처럼 보일 수 있찌만 실제로는 성능 개선에 도움을 준다.
+- 프록시는 실제 대상 객체를 보호하여, 되도록 일을 적게 시키기 떄문
+- 프록시 패턴의 예) 게으른 초기화(Lazy initialization)
+    - 객체를 초기화 하는데 많은 비용이 들지만, 실제로 초기화 한 후에는 한번도 사용하지 않는다고 해보자.!
+- 프록시는 초기화 요청을 대신 받지만, 실제 대상 객체가 정말로 사용되기 전까지는 이 요청을 전달하지 않는다.
+    - 동작이 필요한 시점이 되면 프록시가 초기화와 동자가 요청을 한꺼번에 전달한다.
+#### 예제
+- 샘플코드) chapter7/proxy.html 참고 (미완)
+- 프록시 패턴은 실제 대상 객체가 비용이 많이 드는 작업을 할 때 유용.
+- 네트워크 요청은 웹 애플리케이션에서 가장 비용이 많이 든느 작업중 하나.
+    - 가능한 많은 http요청들을 하나로 결합하는게 효과적
+#### 프록시를 사용해 요청 결과 캐시하기
+- 프록시의 새로운 cache 프로퍼티에 이전 요청의 결과를 캐시해두면 실제 http객체를 더욱 보호할 수 있다.
+- 만약 videos객체가 동일한 동영상 ID에 대한 정보를 다시 요청하면, 프록시는 캐시된 결괄르 반환해서 네트워크 라운드트립을 줄인다.
+### 7.8 중재자
+- 크기에 상관 없이 애플리케이션은 독립된 객체들로 만들어진다.
+- 객체간의 통신은 유지보수가 쉽고 다른 객체를 건드리지 않으면서, 애플리케이션의 일부분을 안전하게 수정할 수 있는 방식으로 이루어져야한다.
+- 애플리케이션이 점차 커져가면서, 더욱 더 많은 객체들이 추가된다.
+- 애플리케이션을 리팩토링하는 동안, 객체들이 제거되거나 재배치되기도 한다.
+- 객체들이 강하게 결합되면, 다른 객체들에 영향으 ㄹ주지 않고 하나의 객체를 수정하기가 어렵다.
+- 중재자 패턴은 결합도를 낮추고 유지보수룰 쉽게 개선하여 이런 문제를 안화시킨다.
+    - 독립던 동료 객체들은 직접 통신하지 않고, 중재자 객체를 거친다.
+    - 동료 객체들은 자신의 상태가 변경되면 중재아게 알린다.
+    - 중재자는 이 변경사항을 알아야 하는 다른 동료 객체들에게 알린다.
+#### 중재자 패턴 예제
+- 샘플코드) chapter7/mediator.html 참고
+- 중재는 모든 객체에 대해 알고 있다.
+- 중재자 이외의 객체들은, 다른 객체들에 대해 전혀 알지 못한다.
+     - 추가, 삭제 쉽다.
+### 7.9 감시자(Observer)
+- 감시자 패턴은 클라이언트 측 자바스크립트 프로그래밍에서 널리 사용되는 패턴
+- mouseover, keypress와 같은 모든 브라우저 이벤트가 감시자 패턴의 예
+- 커스텀 이벤트라고도 부름.
+    - 브라우저가 발생시키는 이벤트가 아닌 프로그램에 의해 만들어진 이벤트
+- 구독자/발행자 패턴이라고도 부름.
+- 주요 목적 : 결합도 낮추기
+- 어떤 객체가 다른 객체의 메서드를 호출하는 대신, 객체의 특별한 행동을 구독해 알림을 받는다.
+- 구독자(subscriber)는 감시자(observer)라고도 부르며, 관찰되는 객체가 발행자라고 함.
+- 발행자는 중요한 이벤트 발생 시 모든 구독자에게 알려주며(구독자 호출) 주로 이벤트 객체의 형태로 메시지 전달
+#### 예제 #1: 잡지 구독
+- 샘플코드) chapter7/observer-01.html 참고 (미완)
+#### 예제 #2: 키 누르기 게임
+- 샘플코드) chapter7/observer-02.html 참고 (미완)
+### 7.10 요약
+##### 싱글톤 (Singleton)
+- '클래스'의 인스턴슬르 단 하나만 생성한다. 생성자 함수로 클래스의 개념을 대체하고 자바와 비슷한 문법을 유지하고 싶은 경우에 쓸 수 있는 몇가지 접근 방법
+    - 자바스크립트에서 모든 객체는 싱글톤.
+    - 개발자가 말하는 '싱글톤'은 때로는 모듈 패턴으로 만들어진 객체
+##### 팩토리 (Factory)
+- 런타임 시 객체 타입을 문자열로 지정해 객체들을 생성하는 메서드를 가리킨다.
+##### 반복자 (Iterator)
+- 복잡한 데이터 구조를 순회하거나 순차적으로 이동하는 API제공
+##### 장식자 (Decorator)
+- 사전에 정의된 데코레이터 객체를 사용해 런타임에 객체에 기능을 추가한다.
+##### 전략 (Strategy)
+- 인터페이스를 동일하게 유지하면서 지정된 작업(컨텍스트)을 처리학 위한 최선의 전략을 선택
+##### 퍼사드 (Facade)
+- 자주 사용되는 (또는 설계가 제대로 되지 않은) 메서드들을 감싸 새로운 메서드를 만들어, 좀 더 편리한 API를 제공
+##### 프록시 (Proxy)
+- 객체를 감싸 객체에 대한 접근을 통제한다. 비용이 큰 작업을 줄이기 위해 작업들을 하나로 묶거나, 정말 필요할 때만 실행하게 해준다.
+##### 중재자 (Mediator)
+- 객체들이 서로 직접 통신하지 않고 오직 중재자 객체를 통해서만 통신하도록 함으로써 결합도로 낮춘다.
+##### 감시자
+- '감시 가능한'객체들을 만들어 결합도를 낮춘다.
+- 이 객체는 특정 이벤틀르 감시하고 있는 모든 감시자들에게 그 이벤트가 발생했을 때 알려준다. (구독자/발행자 또는 커스텀 이벤트 패턴 이라고 함.)
+## Chapter 8 - DOM과 브라우저 패턴
+### 8.1 관심사릐 분리
+- 웹 애플리케이션 개발에서 주요 관심사 세가지
+    - 내용 : HTML 문서
+    - 표현 : CSS 스타일 - 문서가 어떻게 보여질 것인지 지정
+    - 행동 : 자바스크립트 - 사용자 인터랙션과 문서의 동적인 변경 처리
+- 위 세가지 관심사를 분리할수록, 좀 더 광범위한 사용자 에이전트(그래픽 브라우저, 텍스트만 지원하는 브라우저, 장애인을 위한 보조공학기기, 모바일 기기 등)에 애플리케이션을 탑재하기가 용이
+- 관심사의 분리는 실무에서 어떤 의미일까?
+    - CSS를 끈 상태에서 페이지를 테스트 한다. 이 상태로도 사용 가능하고 내용이 표시되며 읽을 수 있어야 한다.
+    - 자바스크립트를 끈 상태에서 페이지를 테스트 한다. 여전히 주 목적에 맞게 제대로 동작하고, 모든 링크가 작동하며, 폼 또한 제대로 동작하고 전송할 수 있어야 한다.
+    - onclick과 같은 인라인 이벤트 핸들러 또는 인라인 style속성은 '내용'에 속하지 않으므로 사용하지 않는다.
+    - 시맨틱하고 의미에 맞는 HTML 엘리먼트를 사용한다. 예를 들어 제목에는 <h1>또는 <h2>를 목록에서 <ol> 또는 <ul>를 사용
+```javascript
+// 안티패턴 : 사용자 에이전트 감지
+if (navigator.userAgent.indexOf('MSIE') !== .1) {
+    document.attachEvent('onclick', console.log);
+}
+
+// 더 좋은 방법
+if (document.attachEvent) {
+    document.attachEvent('onclick', console.log);
+}
+
+// 조금 더 정확한 방법
+if (typeof document.attachEvent === 'undefined') {
+    document.attachEvent('onclick', console.log);
+}
+```
+### 8.2 DOM 스크립팅
+- 페이지의 DOM트리를 다루는 것은 클라이언트 측 자바스크리립트에서 처 리하는 가장 흔한 일
+- DOM메서드가 브라우저간에 일관성 없이 구현되어 있기 떄문에 어렵기도하지.
+- 브라우저간 차이점을 추상화 한 훌륭한 자바 스크립트 라이브러리를 사용하면 개발 속도가 크게 향상될 수 있어!
+
+- DOM트리에 접근하고, 수정할 때 사용할 수 있는 몇가지 패턴을 살펴보자
+#### DOM 접근
+- DOM접근은 비용이 많이 들어
+- DOM은 자바스크립트 엔진과 별개로 구현되었기 떄문이다.
+- 자바스크립트 애플리케이션에서 DOM을 전혀 사용하지 않을 수도 있기 때문에, 브라우저 입장에서 보면 이런 접근 방식이 타당하다.
+- DOM 접근을 최소화 해야한다.
+    - 루프 내에서 DOM접근을 피한다.
+    - DOM 참조를 지역변수에 할당하여 사용한다.
+    - 가능하면 셀렉터 API를 사용한다.
+    - HTML 콜렉션을 순회할 때 length를 캐시하여 사용한다.
+- 코드가 좀 길어지긴 했지만 브라우저에 따라 수십에서 수백배 빠른 예제
+    ```javascript
+    // 안티패턴
+    for (var i = 0; i < 100; i += 1) {
+        document.getElementById('result').innerHTML += `${i}, `;
+    }
+
+    // 지역 변수를 활용하는 개선안
+    var i, content = '';
+    for (i = 0; i < 100; i += 1) {
+        content += `${i}, `;
+    }
+    document.getElementById('result').innerHTML += content;
+
+    // 안티패턴
+    var padding = document.getElementById('result').style.padding,
+        margin = document.getElementById('result').style.margin;
+    
+    // 개선안
+    var style = document.getElementById('result').style,
+        padding = style.padding,
+        margin = style.margin;
+    
+    document.querySelector('ul .selected');
+    document.querySelectorAll('#widget .class');
+
+    // id로 찾는게 가장 쉽고 빠른 방법
+    document.getElementById(myid);
+    ```
+#### DOM 조작
+- DOM 엘리먼트 접근 이외에도, DOM 엘리먼트를 변경 또는 제거하거나 새로운 엘리먼트를 추가하는 작업도 자주 필요하다.
+- DOM 업데이트 시 브라우저는 화면을 다시 그리고(repaint), 엘리먼트들을 재구조화(reflow)하는데, 이 또한 비용이 많이 드는 작업.
+- DOM 업데이트를 최소화 하는게 좋다.
+    - 변경 사항들을 일괄 처리
+    - 실제 문서 트리 외부에서 변경 작업을 수행
+    - 큰 서브 트리를 만들어야 한다면, 서브 트리를 완전히 생성한 다음에 문서에 추가
+    - document fragment에 모든 하위 노드를 추가하는 방법
+    ```javascript
+    // 안티패턴 : 노드를 만들고 곧바로 문서에 붙인다.
+    var p, t;
+
+    p = document.createElement('p');
+    t = document.createTextNode('first paragraph');
+    p.appendChild(t);
+    document.body.appendChild(p);
+
+    p = document.createElement('p');
+    t = document.createTextNode('second paragraph');
+    p.appendChild(t);
+    document.body.appendChild(p);
+    ```
+    - 개선안 : 문서 조각을 생성해 외부에서 수정한 후, 처리가 완전히 끝난 다음에 실제 DOM에 추가하는 것.
+    - DOM 트리에 문서 조각을 추가하면, 조각 자체는 추가되지 않고 그 내용만 추가
+    - 문서 조각은 별도의 부모 노드 없이 여러 개의 노드를 감쌀 수 있는 훌륭한 방법.
+    - 문서조각(document fragment) 사용 예제
+    ```javascript
+    var p, t, frag;
+    frag = document.createDocumentFragment();
+
+    p = document.createElement('p');
+    t = document.createTextNode('first paragraph');
+    p.appendChild(t);
+    frag.appendChild(p);
+
+    p = document.createElement('p');
+    t = document.craeteTextNode('second paragraph');
+    p.appendChild(t);
+    frag.appendChild(p);
+
+    document.body.appendChild(frag);
+    ```
+    - 이 문서 조각 방식은 새로운 노드를 트리에 추가할 때 유용
+- 문서에 이미 존재하는 트리를 변경할 떄는 어떤 방식으로 일괄 변경할 수 있을까?
+    ```javascript
+    var oldnode = document.getElementById('result'),
+        clone = oldnode.cloneNode(true);
+
+    // 복제본을 가지고 변경 작업을 처리한다.
+    // 변경이 끝나고 나면 원래의 노드와 교체한다.
+    oldnode.parentNode.replaceChild(clone, oldnode);
+
+    // replaceWith 사용
+    oldnode.replaceWith(clone);
+    ```
+### 8.3 이벤트
+- 브라우저별 이벤트 처리는 최악의 일관성
+#### 이벤트 처리
+- 우선 엘리먼트에 이벤트 리스너를 붙이는 것으로 시작
+- 클릭할 떄마다 카운터의 숫자를 증가시키는 버튼이 있는데, 인라인 onclick으로 속성을 추가하면 모든 브라우저에서 잘 동작하겠지만, 관심사의 분리와 점진적인 개선의 원칙에 위배된다.
+- 마크업을 건드리지 않고 항상 자바스크립트에서 이벤트 리스너를 처리해야 한다.
+    ```html
+    <button id="clickme">Click me: 0</button>
+    ```
+    ```javascript
+    var b = document.getElementById('clickme'),
+        count = 0;
+    b.onclick = function () {
+        count += 1;
+        b.innerHTML = `Click me: ${count}`;
+    };
+    ```
+#### 이벤트 위임
+### 8.4 장시간 수행되는 스크립트
+#### setTimeout()
+#### 웹 워커
+### 8.5 원격 스크립팅
+#### XMLHttpRequest
+#### JSONP
+#### 프레임과 이미지 비컨(Image Becons)
+### 8.6 자바스크립트 배포
+#### 스크립트 병합
+#### 코드 압축과 gzip 압축
+#### Expires 헤더
+#### CDN 사용
+### 8.7 로딩 전략
+#### <script> 엘리먼트 위치
+#### HTTP Chunked 인코딩 사용
+#### 다운로드 차단하지 않은 동적인 <script>엘리먼트
+#### <script> 엘리먼트 붙이기
+#### 게으른 로딩 (lazy loading)
+#### 주문형 로딩
+#### 자바스크립트 사전 로딩
+

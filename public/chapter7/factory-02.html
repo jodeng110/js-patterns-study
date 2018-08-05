@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>팩터리 02 - 내장 객체 팩터리</title>
+</head>
+
+<body>
+  <script>
+    var o = new Object(),
+      n = new Object(1),
+      s = Object('1'),
+      b = Object(true);
+
+    // 테스트
+    console.log(o.constructor === Object);
+    console.log(n.constructor === Number);
+    console.log(s.constructor === String);
+    console.log(b.constructor === Boolean);
+  </script>
+</body>
+
+</html>

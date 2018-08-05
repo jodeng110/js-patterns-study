@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Iterator 반복자 패턴</title>
+</head>
+
+<body>
+  <script>
+    var agg = (function () {
+      var index = 0,
+        data = [1, 2, 3, 4, 5],
+        length = data.length;
+
+      return {
+        next: function () {
+          var element;
+          if (!this.hasNext()) {
+            return null;
+          }
+          element = data[index];
+          index = index + 2;
+          return element;
+        },
+        hasNext: function () {
+          return index < length;
+        },
+        rewind: function () {
+          // 포인털르 다시 처음으로 돌림
+          index = 0;
+        },
+        current: function () {
+          // 현재 요소 반환
+          // next()는 포인터를 전진시키기 때문에 이 작업을 할 수 없다.
+          return data[index];
+        }
+      };
+    })();
+    
+    while(agg.hasNext()) {
+      console.log(agg.next());
+    }
+
+    agg.rewind();
+    console.log(agg.current()) // 1
+  </script>
+</body>
+
+</html>

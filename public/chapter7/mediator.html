@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>중재자 패턴 - 두 명의 플레이어 중 30초 동안 버튼을 더 많이 누르는 사람이 이기는 게임</title>
+</head>
+
+<body>
+  <div id="status"></div>
+  <div id="results"></div>
+  <script>
+    // player 생성자 함수
+    function Player(name) {
+      this.points = 0;
+      this.name = name;
+    }
+    Player.prototype.play = function () {
+      this.points += 1;
+      mediator.played();
+    };
+
+    // 점수판 객체
+    var scoreboard = {
+      // 점수를 표시할 HTML 엘리먼트
+      element: document.getElementById('results'),
+
+      // 점수 표시를 갱신
+      update: function (score) {
+        var i, msg = '';
+        for (i in score) {
+          if (score.hasOwnProperty(i)) {
+            msg += `<p><strong>${i}</strong>${score[i]}</p>`;
+          }
+        }
+        this.element.innerHTML = msg;
+      }
+    };
+
+    // 중재자 객체
+    var mediator = {
+      // 모든 player객체
+      players: {},
+
+      // 초기화
+      setup: function () {
+        var players = this.players;
+        players.home = new Player('Home');
+        players.guest = new Player('Guest');
+        document.getElementById('status').textContent = `플레이어 (Home: 1 , Guest: 0)생성!\n게임이 시작되었습니다.\n키를 눌러주세요.`
+      },
+      // 누군가 play하고 점수를 업데이트 한다.
+      played: function () {
+        var players = this.players,
+          score = {
+            Home: players.home.points,
+            Guest: players.guest.points
+          };
+
+        scoreboard.update(score);
+      },
+      // 사용자 인터랙션을 핸들링
+      keypress: function (e) {
+        e = e || window.event;
+        if (e.which === 49) {
+          mediator.players.home.play();
+          return;
+        }
+        if (e.which === 48) {
+          mediator.players.guest.play();
+          return;
+        }
+      }
+    };
+
+    // 시작!
+    mediator.setup();
+    window.onkeypress = mediator.keypress;
+
+    // 30초후에 게임을 종료시킨다.
+    setTimeout(function () {
+      window.onkeypress = null;
+      alert('Game over!')
+    }, 30000);
+
+  </script>
+</body>
+
+</html>

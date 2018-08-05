@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>싱글톤-01</title>
+</head>
+
+<body>
+  <script>
+    var obj = { myProp: 'myValue' };
+    var obj2 = { myProp: 'myValue' };
+    console.log(obj == obj2); // false
+    console.log(obj === obj2); // false
+
+    /* new를 사용하기 */
+    function Universe() { }
+
+    var uni = new Universe();
+    var uni2 = new Universe();
+
+    console.log(uni === uni2); // false ===> 이걸 true로 하려면????
+    /*
+    uni === uni2를 같게 하려면?
+    객체의 인스턴스인 this가 생성되면 Universe 생성자가 이를 캐시한 후,
+    생성자 호출 시 캐시된 인스턴스를 반환하게 한다.
+    */
+  </script>
+</body>
+
+</html>
